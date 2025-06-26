@@ -1,4 +1,4 @@
-# GoAIX Backend - Production Dockerfile v5
+# GoAIX Backend - Production Dockerfile v6
 FROM node:20-alpine
 
 # Install system dependencies
@@ -16,8 +16,12 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Set production environment and build
+# Set production environment variables
 ENV NODE_ENV=production
+ENV STRAPI_DISABLE_UPDATE_NOTIFICATION=true
+ENV STRAPI_HIDE_STARTUP_MESSAGE=true
+
+# Build without interactive prompts
 RUN npm run build
 
 # Remove dev dependencies after build
