@@ -1,0 +1,179 @@
+{
+  "kind": "collectionType",
+  "collectionName": "campaigns",
+  "info": {
+    "singularName": "campaign",
+    "pluralName": "campaigns",
+    "displayName": "Campaign",
+    "description": "AI-Lead-Magnet Kampagnen mit verschiedenen Interaktionstypen"
+  },
+  "options": {
+    "draftAndPublish": false,
+    "comment": ""
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
+  "attributes": {
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true,
+      "unique": true,
+      "minLength": 3,
+      "maxLength": 100,
+      "regex": "^[a-z0-9-_]+$"
+    },
+    "title": {
+      "type": "string",
+      "required": true,
+      "minLength": 3,
+      "maxLength": 200,
+      "configurable": false
+    },
+    "description": {
+      "type": "text",
+      "maxLength": 1000
+    },
+    "campaignType": {
+      "type": "enumeration",
+      "enum": [
+        "quiz",
+        "imageUpload",
+        "chatbot",
+        "textOnly",
+        "custom"
+      ],
+      "required": true,
+      "default": "textOnly"
+    },
+    "config": {
+      "type": "json",
+      "required": true,
+      "default": {}
+    },
+    "aiPromptTemplate": {
+      "type": "text",
+      "required": true,
+      "minLength": 10,
+      "maxLength": 5000
+    },
+    "emailTemplate": {
+      "type": "text",
+      "maxLength": 10000
+    },
+    "emailSubject": {
+      "type": "string",
+      "maxLength": 200,
+      "default": "Ihr personalisiertes Ergebnis von {{campaignTitle}}"
+    },
+    "googleSheetId": {
+      "type": "string",
+      "maxLength": 100,
+      "regex": "^[a-zA-Z0-9-_]+$"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "required": true
+    },
+    "isPublic": {
+      "type": "boolean",
+      "default": true,
+      "required": true
+    },
+    "startDate": {
+      "type": "datetime"
+    },
+    "endDate": {
+      "type": "datetime"
+    },
+    "maxLeads": {
+      "type": "integer",
+      "min": 0,
+      "max": 100000
+    },
+    "currentLeadCount": {
+      "type": "integer",
+      "default": 0,
+      "min": 0
+    },
+    "conversionGoal": {
+      "type": "integer",
+      "min": 0,
+      "max": 100000
+    },
+    "tags": {
+      "type": "json",
+      "default": []
+    },
+    "metadata": {
+      "type": "json",
+      "default": {}
+    },
+    "trackingPixel": {
+      "type": "text",
+      "maxLength": 2000
+    },
+    "successRedirectUrl": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "errorRedirectUrl": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "cssCustomization": {
+      "type": "text",
+      "maxLength": 10000
+    },
+    "aiProvider": {
+      "type": "enumeration",
+      "enum": [
+        "openai",
+        "claude",
+        "gemini",
+        "auto"
+      ],
+      "default": "auto"
+    },
+    "aiModel": {
+      "type": "string",
+      "maxLength": 50,
+      "default": "gpt-4"
+    },
+    "aiTemperature": {
+      "type": "decimal",
+      "min": 0,
+      "max": 2,
+      "default": 0.7
+    },
+    "aiMaxTokens": {
+      "type": "integer",
+      "min": 100,
+      "max": 4000,
+      "default": 1000
+    },
+    "leads": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::lead.lead",
+      "mappedBy": "campaign"
+    },
+    "createdBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "admin::user"
+    },
+    "updatedBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "admin::user"
+    }
+  }
+}

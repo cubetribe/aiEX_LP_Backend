@@ -1,0 +1,239 @@
+{
+  "kind": "collectionType",
+  "collectionName": "leads",
+  "info": {
+    "singularName": "lead",
+    "pluralName": "leads",
+    "displayName": "Lead",
+    "description": "Generierte Leads mit AI-Auswertung aus Kampagnen"
+  },
+  "options": {
+    "draftAndPublish": false,
+    "comment": ""
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
+  "attributes": {
+    "campaign": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::campaign.campaign",
+      "inversedBy": "leads",
+      "required": true
+    },
+    "firstName": {
+      "type": "string",
+      "required": true,
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "lastName": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "email": {
+      "type": "email",
+      "required": true,
+      "unique": false,
+      "maxLength": 255
+    },
+    "phone": {
+      "type": "string",
+      "maxLength": 20,
+      "regex": "^[+]?[0-9\\s\\-\\(\\)]+$"
+    },
+    "company": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "jobTitle": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "responses": {
+      "type": "json",
+      "required": true,
+      "default": {}
+    },
+    "aiResult": {
+      "type": "text",
+      "maxLength": 10000
+    },
+    "aiProcessingStatus": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "retry"
+      ],
+      "default": "pending",
+      "required": true
+    },
+    "aiProvider": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "aiModel": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "aiTokensUsed": {
+      "type": "integer",
+      "min": 0,
+      "default": 0
+    },
+    "aiProcessingTime": {
+      "type": "integer",
+      "min": 0,
+      "default": 0
+    },
+    "aiCost": {
+      "type": "decimal",
+      "min": 0,
+      "default": 0
+    },
+    "googleSheetsExported": {
+      "type": "boolean",
+      "default": false,
+      "required": true
+    },
+    "googleSheetsExportedAt": {
+      "type": "datetime"
+    },
+    "googleSheetsRowNumber": {
+      "type": "integer",
+      "min": 0
+    },
+    "emailSent": {
+      "type": "boolean",
+      "default": false,
+      "required": true
+    },
+    "emailSentAt": {
+      "type": "datetime"
+    },
+    "emailOpenedAt": {
+      "type": "datetime"
+    },
+    "emailClickedAt": {
+      "type": "datetime"
+    },
+    "ipAddress": {
+      "type": "string",
+      "maxLength": 45
+    },
+    "userAgent": {
+      "type": "text",
+      "maxLength": 1000
+    },
+    "referrer": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "utmSource": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "utmMedium": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "utmCampaign": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "utmTerm": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "utmContent": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "leadScore": {
+      "type": "integer",
+      "min": 0,
+      "max": 100,
+      "default": 0
+    },
+    "leadQuality": {
+      "type": "enumeration",
+      "enum": [
+        "hot",
+        "warm",
+        "cold",
+        "unqualified"
+      ],
+      "default": "warm"
+    },
+    "tags": {
+      "type": "json",
+      "default": []
+    },
+    "notes": {
+      "type": "text",
+      "maxLength": 2000
+    },
+    "customFields": {
+      "type": "json",
+      "default": {}
+    },
+    "consentGiven": {
+      "type": "boolean",
+      "default": false,
+      "required": true
+    },
+    "consentTimestamp": {
+      "type": "datetime"
+    },
+    "marketingOptIn": {
+      "type": "boolean",
+      "default": false
+    },
+    "followUpStatus": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "contacted",
+        "interested",
+        "not_interested",
+        "converted",
+        "lost"
+      ],
+      "default": "pending"
+    },
+    "conversionValue": {
+      "type": "decimal",
+      "min": 0,
+      "default": 0
+    },
+    "lastContactedAt": {
+      "type": "datetime"
+    },
+    "nextFollowUpAt": {
+      "type": "datetime"
+    },
+    "processingErrors": {
+      "type": "json",
+      "default": []
+    },
+    "retryCount": {
+      "type": "integer",
+      "min": 0,
+      "default": 0
+    },
+    "maxRetries": {
+      "type": "integer",
+      "min": 0,
+      "default": 3
+    }
+  }
+}
