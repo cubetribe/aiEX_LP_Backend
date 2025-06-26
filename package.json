@@ -4,7 +4,7 @@
   "description": "GoAIX Backend Deployment Wrapper",
   "main": "Code/src/index.js",
   "scripts": {
-    "install": "cd Code && npm ci",
+    "postinstall": "cd Code && npm ci --production",
     "start": "cd Code && npm start",
     "build": "cd Code && npm run build",
     "develop": "cd Code && npm run develop"
@@ -14,5 +14,7 @@
     "npm": ">=8.0.0"
   },
   "keywords": ["strapi", "goaix", "ai", "lead-magnet"],
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
 }
