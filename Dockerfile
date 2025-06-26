@@ -1,15 +1,13 @@
 # Use Node.js 18 Alpine image
 FROM node:18-alpine
 
-# Force cache invalidation - v2
-RUN echo "Build version: $(date +%s)"
-
-# Install system dependencies
+# Install system dependencies for native modules
 RUN apk add --no-cache \
     python3 \
     make \
     g++ \
-    libc6-compat
+    libc6-compat \
+    vips-dev
 
 # Set working directory
 WORKDIR /app
@@ -17,8 +15,11 @@ WORKDIR /app
 # Copy package files from Code directory
 COPY Code/package*.json ./
 
-# Install ALL dependencies (Strapi needs dev deps for build)
-RUN npm ci --silent
+# Debug npm and node versions
+RUN node --version && npm --version
+
+# Clear npm cache and install dependencies
+RUN npm cache clean --force && npm ci --verbose
 
 # Copy application code
 COPY Code/ .
