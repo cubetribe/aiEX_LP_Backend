@@ -1,17 +1,30 @@
 # Use Node.js 18 Alpine image
 FROM node:18-alpine
 
+# Install system dependencies
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    libc6-compat
+
 # Set working directory
 WORKDIR /app
 
 # Copy package files from Code directory
 COPY Code/package*.json ./
 
-# Install dependencies
-RUN npm ci --production --silent
+# Install ALL dependencies (Strapi needs dev deps for build)
+RUN npm ci --silent
 
 # Copy application code
 COPY Code/ .
+
+# Build Strapi admin panel
+RUN npm run build
+
+# Remove dev dependencies after build
+RUN npm prune --production
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
