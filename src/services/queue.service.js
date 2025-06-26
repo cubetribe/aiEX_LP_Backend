@@ -10,7 +10,7 @@ const Queue = require('bull');
 const Redis = require('ioredis');
 const { createBullBoard } = require('@bull-board/api');
 const { BullAdapter } = require('@bull-board/api/bullAdapter');
-const { ExpressAdapter } = require('@bull-board/express');
+const { KoaAdapter } = require('@bull-board/koa');
 
 /**
  * Queue Service for handling asynchronous jobs
@@ -206,7 +206,7 @@ class QueueService {
    */
   setupBullBoard() {
     try {
-      const serverAdapter = new ExpressAdapter();
+      const serverAdapter = new KoaAdapter();
       
       const queueAdapters = Array.from(this.queues.values()).map(queue => new BullAdapter(queue));
       
