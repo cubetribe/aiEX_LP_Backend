@@ -1,4 +1,4 @@
-# GoAIX Backend - Production Dockerfile v6
+# GoAIX Backend - Production Dockerfile v7
 FROM node:20-alpine
 
 # Install system dependencies
@@ -21,8 +21,11 @@ ENV NODE_ENV=production
 ENV STRAPI_DISABLE_UPDATE_NOTIFICATION=true
 ENV STRAPI_HIDE_STARTUP_MESSAGE=true
 
-# Build without interactive prompts
-RUN npm run build
+# Ensure all files have correct permissions
+RUN chmod -R 755 .
+
+# Build Strapi admin with increased memory limit
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
 # Remove dev dependencies after build
 RUN npm prune --production
