@@ -1,6 +1,9 @@
 # Use Node.js 18 Alpine image
 FROM node:18-alpine
 
+# Force cache invalidation - v2
+RUN echo "Build version: $(date +%s)"
+
 # Install system dependencies
 RUN apk add --no-cache \
     python3 \
