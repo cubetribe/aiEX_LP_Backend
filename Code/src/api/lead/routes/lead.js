@@ -1,6 +1,7 @@
 /**
  * Lead Routes
  * Defines API routes for lead management
+ * Fixed for Railway deployment - v2.0
  */
 
 'use strict';
@@ -10,6 +11,7 @@
  */
 
 // Define all routes manually to avoid createCoreRouter issues on Railway
+// This file was completely rewritten to eliminate Strapi factory dependencies
 module.exports = {
   routes: [
     // Standard CRUD routes (manually defined for stability)
