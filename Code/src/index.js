@@ -62,39 +62,59 @@ module.exports = {
         }
         strapi.log.warn('⚠️ Environment validation warnings detected, but continuing...');
       }
-      // Initialize queue system
-      const queueService = strapi.service('api::queue.queue');
-      if (queueService && queueService.initialize) {
-        await queueService.initialize();
-        strapi.log.info('📋 Queue system initialized');
+      // Initialize queue system (optional)
+      try {
+        const queueService = strapi.service('api::queue.queue');
+        if (queueService && queueService.initialize) {
+          await queueService.initialize();
+          strapi.log.info('📋 Queue system initialized');
+        }
+      } catch (error) {
+        strapi.log.warn('⚠️ Queue service initialization failed:', error.message);
       }
 
-      // Initialize Redis connection
-      const redisService = strapi.service('api::redis.redis');
-      if (redisService && redisService.initialize) {
-        await redisService.initialize();
-        strapi.log.info('🔴 Redis connection initialized');
+      // Initialize Redis connection (optional)
+      try {
+        const redisService = strapi.service('api::redis.redis');
+        if (redisService && redisService.initialize) {
+          await redisService.initialize();
+          strapi.log.info('🔴 Redis connection initialized');
+        }
+      } catch (error) {
+        strapi.log.warn('⚠️ Redis service initialization failed:', error.message);
       }
 
-      // Validate AI provider configurations
-      const aiService = strapi.service('api::ai-orchestrator.ai-orchestrator');
-      if (aiService && aiService.validateProviders) {
-        const validProviders = await aiService.validateProviders();
-        strapi.log.info(`🤖 AI providers validated: ${validProviders.join(', ')}`);
+      // Validate AI provider configurations (optional)
+      try {
+        const aiService = strapi.service('api::ai-orchestrator.ai-orchestrator');
+        if (aiService && aiService.validateProviders) {
+          const validProviders = await aiService.validateProviders();
+          strapi.log.info(`🤖 AI providers validated: ${validProviders.join(', ')}`);
+        }
+      } catch (error) {
+        strapi.log.warn('⚠️ AI service initialization failed:', error.message);
       }
 
-      // Initialize Google Sheets service
-      const sheetsService = strapi.service('api::google-sheets.google-sheets');
-      if (sheetsService && sheetsService.initialize) {
-        await sheetsService.initialize();
-        strapi.log.info('📊 Google Sheets service initialized');
+      // Initialize Google Sheets service (optional)
+      try {
+        const sheetsService = strapi.service('api::google-sheets.google-sheets');
+        if (sheetsService && sheetsService.initialize) {
+          await sheetsService.initialize();
+          strapi.log.info('📊 Google Sheets service initialized');
+        }
+      } catch (error) {
+        strapi.log.warn('⚠️ Google Sheets service initialization failed:', error.message);
       }
 
-      // Setup email service
-      const emailService = strapi.service('api::email.email');
-      if (emailService && emailService.initialize) {
-        await emailService.initialize();
-        strapi.log.info('📧 Email service initialized');
+      // Setup email service (optional)
+      try {
+        const emailService = strapi.service('api::email.email');
+        if (emailService && emailService.initialize) {
+          await emailService.initialize();
+          strapi.log.info('📧 Email service initialized');
+        }
+      } catch (error) {
+        strapi.log.warn('⚠️ Email service initialization failed:', error.message);
       }
 
       // Create default admin user if none exists (development only)
@@ -110,9 +130,13 @@ module.exports = {
       // Register custom routes
       registerCustomRoutes(strapi);
 
-      // Setup enhanced lifecycle hooks
-      const { setupLifecycleHooks } = require('./utils/lifecycle-hooks');
-      setupLifecycleHooks(strapi);
+      // Setup enhanced lifecycle hooks (optional)
+      try {
+        const { setupLifecycleHooks } = require('./utils/lifecycle-hooks');
+        setupLifecycleHooks(strapi);
+      } catch (error) {
+        strapi.log.warn('⚠️ Lifecycle hooks setup failed:', error.message);
+      }
 
       strapi.log.info('🎉 GoAIX Platform bootstrap completed successfully!');
       strapi.log.info(`🌐 Platform running at: ${process.env.STRAPI_URL || 'http://localhost:1337'}`);
