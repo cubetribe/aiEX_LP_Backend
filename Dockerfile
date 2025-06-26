@@ -1,5 +1,5 @@
-# Use Node.js 18 Alpine image
-FROM node:18-alpine
+# Use Node.js 20 Alpine image (Strapi supports up to v20)
+FROM node:20-alpine
 
 # Install system dependencies for native modules
 RUN apk add --no-cache \
@@ -13,13 +13,14 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 # Copy package files from Code directory
-COPY Code/package*.json ./
+COPY Code/package.json ./
+COPY Code/package-lock.json* ./
 
-# Debug npm and node versions
-RUN node --version && npm --version
+# Debug: Show what files we have
+RUN ls -la && cat package.json | head -20
 
-# Clear npm cache and install dependencies
-RUN npm cache clean --force && npm ci --verbose
+# Now we have package-lock.json, use npm ci
+RUN npm ci --only=production --verbose
 
 # Copy application code
 COPY Code/ .
