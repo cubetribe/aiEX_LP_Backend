@@ -9,18 +9,55 @@
  * lead router
  */
 
-const { createCoreRouter } = require('@strapi/strapi').factories;
-
-// Try to create default router safely
-let defaultRouter = null;
-try {
-  defaultRouter = createCoreRouter('api::lead.lead');
-} catch (error) {
-  console.warn('Warning: Could not create default core router for lead:', error.message);
-}
-
-const customRoutes = {
+// Define all routes manually to avoid createCoreRouter issues on Railway
+module.exports = {
   routes: [
+    // Standard CRUD routes (manually defined for stability)
+    {
+      method: 'GET',
+      path: '/leads',
+      handler: 'lead.find',
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
+      method: 'GET',
+      path: '/leads/:id',
+      handler: 'lead.findOne',
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
+      method: 'POST',
+      path: '/leads',
+      handler: 'lead.create',
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
+      method: 'PUT',
+      path: '/leads/:id',
+      handler: 'lead.update',
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
+      method: 'DELETE',
+      path: '/leads/:id',
+      handler: 'lead.delete',
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+    },
     // Frontend-optimized endpoints (public)
     {
       method: 'POST',
@@ -129,47 +166,5 @@ const customRoutes = {
         middlewares: [],
       },
     },
-  ],
-};
-
-// Merge default routes with custom routes safely
-const defaultRoutes = defaultRouter && defaultRouter.routes ? defaultRouter.routes : [
-  // Fallback core routes if createCoreRouter fails
-  {
-    method: 'GET',
-    path: '/leads',
-    handler: 'lead.find',
-    config: { policies: [], middlewares: [] },
-  },
-  {
-    method: 'GET',
-    path: '/leads/:id',
-    handler: 'lead.findOne',
-    config: { policies: [], middlewares: [] },
-  },
-  {
-    method: 'POST',
-    path: '/leads',
-    handler: 'lead.create',
-    config: { policies: [], middlewares: [] },
-  },
-  {
-    method: 'PUT',
-    path: '/leads/:id',
-    handler: 'lead.update',
-    config: { policies: [], middlewares: [] },
-  },
-  {
-    method: 'DELETE',
-    path: '/leads/:id',
-    handler: 'lead.delete',
-    config: { policies: [], middlewares: [] },
-  },
-];
-
-module.exports = {
-  routes: [
-    ...defaultRoutes,
-    ...customRoutes.routes,
   ],
 };
