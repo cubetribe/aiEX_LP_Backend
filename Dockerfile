@@ -1,4 +1,4 @@
-# GoAIX Backend - Production Dockerfile v3
+# GoAIX Backend - Production Dockerfile v4
 FROM node:20-alpine
 
 # Install system dependencies
@@ -8,13 +8,13 @@ RUN apk add --no-cache python3 make g++ libc6-compat vips-dev
 WORKDIR /app
 
 # Copy package files
-COPY Code/package.json Code/package-lock.json ./
+COPY package.json package-lock.json ./
 
 # Install dependencies
 RUN npm ci --only=production
 
 # Copy source code
-COPY Code/ .
+COPY . .
 
 # Build application
 RUN npm run build

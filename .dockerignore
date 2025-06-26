@@ -1,24 +1,47 @@
-# Ignore Nixpacks artifacts
-.nixpacks/
-nixpacks.toml
-
-# Node modules (will be installed in container)
+# Node modules
 node_modules/
-Code/node_modules/
+npm-debug.log*
 
-# Git and development files
+# Build artifacts  
+build/
+dist/
+.tmp/
+
+# Environment files
+.env*
+!.env.example
+
+# Git
 .git/
 .gitignore
-.DS_Store
-*.log
-
-# Railway files
-.railway/
 
 # Documentation
 README.md
-CLAUDE.md
 *.md
+docs/
 
-# Frontend (separate repo)
-Frontend/
+# Tests
+tests/
+coverage/
+.nyc_output/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Cache
+.cache/
+.npm/
+
+# Railway specific
+.railway/
