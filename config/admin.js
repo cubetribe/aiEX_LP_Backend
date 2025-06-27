@@ -96,7 +96,7 @@ module.exports = ({ env }) => ({
       maxAge: env.int('SESSION_MAX_AGE', 1000 * 60 * 60 * 24 * 30), // 30 days
       httpOnly: true,
       sameSite: env('SESSION_SAME_SITE', 'lax'),
-      domain: env('SESSION_DOMAIN', env('NODE_ENV') === 'production' ? '.quiz.goaiex.com' : 'localhost'),
+      domain: env('SESSION_DOMAIN', null), // Let Railway handle domain automatically
     },
   },
 
