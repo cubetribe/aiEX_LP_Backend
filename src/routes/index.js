@@ -492,4 +492,133 @@ module.exports = [
       auth: false,
     },
   },
+  {
+    method: 'GET',
+    path: '/leads/:id/result',
+    handler: async (ctx) => {
+      try {
+        const { id } = ctx.params;
+        
+        // Set CORS headers
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          ctx.set('Access-Control-Allow-Origin', origin);
+          ctx.set('Access-Control-Allow-Credentials', 'true');
+          ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+
+        const lead = await strapi.entityService.findOne('api::lead.lead', id, {
+          populate: ['campaign']
+        });
+
+        if (!lead) {
+          ctx.status = 404;
+          ctx.body = { error: 'Lead not found' };
+          return;
+        }
+
+        // Check if result should be shown based on campaign configuration
+        const campaign = lead.campaign;
+        const resultConfig = campaign?.resultDisplayConfig || {};
+        const deliveryMode = campaign?.resultDeliveryMode || 'show_only';
+
+        if (deliveryMode === 'email_only' && !resultConfig.showOnScreen) {
+          ctx.status = 403;
+          ctx.body = { 
+            error: 'Result delivery is email-only for this campaign',
+            message: 'Das Ergebnis wird per E-Mail zugestellt. Bitte prüfen Sie Ihr Postfach.'
+          };
+          return;
+        }
+
+        // Return result data
+        ctx.body = {
+          data: {
+            leadId: lead.id,
+            leadScore: lead.leadScore,
+            leadQuality: lead.leadQuality,
+            aiResult: lead.aiResult,
+            aiProcessingStatus: lead.aiProcessingStatus,
+            firstName: lead.firstName,
+            campaign: {
+              title: campaign?.title,
+              resultDisplayConfig: resultConfig
+            },
+            canShowResult: deliveryMode !== 'email_only',
+            resultDeliveryMode: deliveryMode
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error fetching lead result:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to fetch result' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'POST',
+    path: '/campaigns/:slug/configure-result-delivery',
+    handler: async (ctx) => {
+      try {
+        const { slug } = ctx.params;
+        const { resultDeliveryMode, resultDisplayConfig } = ctx.request.body;
+
+        // Set CORS headers
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          ctx.set('Access-Control-Allow-Origin', origin);
+          ctx.set('Access-Control-Allow-Credentials', 'true');
+          ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+
+        const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
+          filters: { slug }
+        });
+
+        if (!campaigns || campaigns.length === 0) {
+          ctx.status = 404;
+          ctx.body = { error: 'Campaign not found' };
+          return;
+        }
+
+        const campaign = campaigns[0];
+
+        // Update campaign result delivery configuration
+        const updateData = {};
+        if (resultDeliveryMode) {
+          updateData.resultDeliveryMode = resultDeliveryMode;
+        }
+        if (resultDisplayConfig) {
+          updateData.resultDisplayConfig = {
+            ...campaign.resultDisplayConfig,
+            ...resultDisplayConfig
+          };
+        }
+
+        const updatedCampaign = await strapi.entityService.update('api::campaign.campaign', campaign.id, {
+          data: updateData
+        });
+
+        ctx.body = {
+          data: {
+            id: updatedCampaign.id,
+            resultDeliveryMode: updatedCampaign.resultDeliveryMode,
+            resultDisplayConfig: updatedCampaign.resultDisplayConfig
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error configuring result delivery:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to configure result delivery' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
 ];

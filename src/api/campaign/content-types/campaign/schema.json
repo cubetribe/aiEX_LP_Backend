@@ -132,6 +132,36 @@
       "maxLength": 200,
       "default": "Ihr personalisiertes Ergebnis von {{campaignTitle}}"
     },
+    "resultDeliveryMode": {
+      "type": "enumeration",
+      "enum": ["show_only", "email_only", "show_and_email"],
+      "default": "show_only",
+      "description": "How to deliver AI results to users"
+    },
+    "showResultImmediately": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show result on screen immediately after submission"
+    },
+    "requireEmailForResult": {
+      "type": "boolean", 
+      "default": false,
+      "description": "Require email to view result"
+    },
+    "resultDisplayConfig": {
+      "type": "json",
+      "default": {
+        "showOnScreen": true,
+        "sendEmail": false,
+        "emailRequired": false,
+        "resultPageTitle": "Ihr personalisiertes Ergebnis",
+        "resultPageSubtitle": "Basierend auf Ihren Antworten haben wir folgende Empfehlungen:",
+        "showDownloadButton": true,
+        "showShareButton": true,
+        "redirectAfterResult": null,
+        "autoRedirectDelay": 0
+      }
+    },
     "googleSheetId": {
       "type": "string",
       "maxLength": 100,

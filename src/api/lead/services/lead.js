@@ -59,6 +59,9 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
 
       strapi.log.info(`Lead created: ${lead.email} (Score: ${leadScore}, Quality: ${leadQuality})`);
       
+      // Handle result delivery based on campaign configuration
+      await this.handleResultDelivery(lead, campaignData);
+      
       return lead;
     } catch (error) {
       strapi.log.error('Error processing lead submission:', error);
@@ -242,6 +245,179 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
     } catch (error) {
       strapi.log.error('Error calculating lead stats:', error);
       throw error;
+    }
+  },
+
+  /**
+   * Handle result delivery based on campaign configuration
+   */
+  async handleResultDelivery(lead, campaignData) {
+    try {
+      const resultConfig = campaignData?.resultDisplayConfig || {};
+      const deliveryMode = campaignData?.resultDeliveryMode || 'show_only';
+      
+      // Generate AI result if needed
+      let aiResult = null;
+      if (deliveryMode !== 'show_only' || resultConfig.showOnScreen) {
+        aiResult = await this.generateAIResult(lead, campaignData);
+        
+        // Update lead with AI result
+        await strapi.entityService.update('api::lead.lead', lead.id, {
+          data: {
+            aiResult,
+            aiProcessingStatus: 'completed'
+          }
+        });
+      }
+      
+      // Send email if required
+      if (deliveryMode === 'email_only' || deliveryMode === 'show_and_email' || resultConfig.sendEmail) {
+        await this.sendResultEmail(lead, campaignData, aiResult);
+      }
+      
+      strapi.log.info(`Result delivery completed for lead ${lead.id} (mode: ${deliveryMode})`);
+      
+    } catch (error) {
+      strapi.log.error('Error handling result delivery:', error);
+      
+      // Update lead with error status
+      await strapi.entityService.update('api::lead.lead', lead.id, {
+        data: {
+          aiProcessingStatus: 'failed'
+        }
+      });
+    }
+  },
+
+  /**
+   * Generate AI result based on responses
+   */
+  async generateAIResult(lead, campaignData) {
+    try {
+      // For now, generate a simple result based on lead quality and responses
+      // Later this can be enhanced with actual AI integration
+      
+      const { leadScore, leadQuality } = lead;
+      const responses = lead.responses || {};
+      const campaignTitle = campaignData?.title || 'Quiz';
+      
+      let result = '';
+      
+      // Quality-based messaging
+      if (leadQuality === 'hot') {
+        result += `🔥 Ausgezeichnet! Sie sind ein Premium-Lead mit ${leadScore}/100 Punkten.\n\n`;
+        result += `Basierend auf Ihren Antworten sehen wir großes Potenzial für eine Zusammenarbeit. `;
+        result += `Ihre Bedürfnisse decken sich perfekt mit unseren Lösungen.\n\n`;
+      } else if (leadQuality === 'warm') {
+        result += `⭐ Sehr gut! Sie haben ${leadScore}/100 Punkte erreicht.\n\n`;
+        result += `Ihre Antworten zeigen klares Interesse an unseren Lösungen. `;
+        result += `Mit den richtigen Maßnahmen können wir Ihnen optimal helfen.\n\n`;
+      } else if (leadQuality === 'cold') {
+        result += `💡 Interessant! Sie haben ${leadScore}/100 Punkte erreicht.\n\n`;
+        result += `Ihre Antworten zeigen, dass Sie noch am Anfang stehen. `;
+        result += `Wir haben einige Empfehlungen für Ihren Einstieg.\n\n`;
+      } else {
+        result += `📋 Vielen Dank für Ihre Teilnahme!\n\n`;
+        result += `Ihre Antworten geben uns einen ersten Einblick. `;
+        result += `Hier sind einige allgemeine Empfehlungen für Sie.\n\n`;
+      }
+      
+      // Add personalized recommendations based on responses
+      result += this.generatePersonalizedRecommendations(responses, leadQuality);
+      
+      // Add next steps
+      result += `\n\n📞 Nächste Schritte:\n`;
+      if (leadQuality === 'hot') {
+        result += `• Sprechen Sie direkt mit unserem Experten-Team\n`;
+        result += `• Erhalten Sie eine kostenlose Erstberatung\n`;
+        result += `• Individuelle Lösungsempfehlung binnen 24h\n`;
+      } else if (leadQuality === 'warm') {
+        result += `• Laden Sie unseren kostenlosen Leitfaden herunter\n`;
+        result += `• Buchen Sie ein unverbindliches Beratungsgespräch\n`;
+        result += `• Erhalten Sie maßgeschneiderte Empfehlungen\n`;
+      } else {
+        result += `• Informieren Sie sich über unsere Basis-Angebote\n`;
+        result += `• Nutzen Sie unsere kostenlosen Ressourcen\n`;
+        result += `• Bleiben Sie über unseren Newsletter informiert\n`;
+      }
+      
+      return result;
+      
+    } catch (error) {
+      strapi.log.error('Error generating AI result:', error);
+      return 'Vielen Dank für Ihre Teilnahme! Wir werden uns in Kürze bei Ihnen melden.';
+    }
+  },
+
+  /**
+   * Generate personalized recommendations
+   */
+  generatePersonalizedRecommendations(responses, leadQuality) {
+    let recommendations = '🎯 Personalisierte Empfehlungen:\n\n';
+    
+    const responseText = Object.values(responses).join(' ').toLowerCase();
+    
+    // Business vs. Private recommendations
+    if (responseText.includes('unternehmer') || responseText.includes('business')) {
+      if (responseText.includes('200+')) {
+        recommendations += `• Enterprise-Lösungen mit dediziertem Support\n`;
+        recommendations += `• Skalierbare AI-Integration für Großunternehmen\n`;
+        recommendations += `• Custom Development & White-Label Optionen\n`;
+      } else if (responseText.includes('50')) {
+        recommendations += `• Business-Pakete mit erweiterten Features\n`;
+        recommendations += `• Mittelstands-optimierte AI-Lösungen\n`;
+        recommendations += `• ROI-fokussierte Implementierung\n`;
+      } else {
+        recommendations += `• Startup-freundliche Einstiegspakete\n`;
+        recommendations += `• Kosteneffiziente AI-Tools für kleine Teams\n`;
+        recommendations += `• Schnelle Implementierung ohne hohe Vorlaufkosten\n`;
+      }
+    } else if (responseText.includes('privatperson') || responseText.includes('private')) {
+      if (responseText.includes('100k')) {
+        recommendations += `• Premium AI-Tools für anspruchsvolle Anwender\n`;
+        recommendations += `• 1:1 Coaching und persönliche Betreuung\n`;
+        recommendations += `• Exklusive Masterkurse und Workshops\n`;
+      } else {
+        recommendations += `• Einsteigerfreundliche AI-Kurse\n`;
+        recommendations += `• Community-Support und Gruppencoaching\n`;
+        recommendations += `• Praxisnahe Tutorials und Anwendungen\n`;
+      }
+    }
+    
+    // Experience-based recommendations
+    if (responseText.includes('keine') && responseText.includes('erfahrung')) {
+      recommendations += `• Grundlagen-Kurs "AI für Einsteiger"\n`;
+      recommendations += `• Step-by-Step Video-Tutorials\n`;
+      recommendations += `• Persönlicher Mentor für die ersten Schritte\n`;
+    } else if (responseText.includes('viel') || responseText.includes('experte')) {
+      recommendations += `• Advanced AI-Strategien und Best Practices\n`;
+      recommendations += `• Beta-Zugang zu neuesten Tools\n`;
+      recommendations += `• Networking mit anderen AI-Experten\n`;
+    }
+    
+    return recommendations;
+  },
+
+  /**
+   * Send result email using email service
+   */
+  async sendResultEmail(lead, campaignData, aiResult) {
+    try {
+      const emailService = require('../../services/email.service');
+      const campaign = await strapi.entityService.findOne('api::campaign.campaign', campaignData.id);
+      
+      const emailResult = await emailService.sendResultEmail(lead, campaign, aiResult);
+      
+      if (emailResult.success) {
+        strapi.log.info(`Result email sent to ${lead.email}: ${emailResult.messageId}`);
+      } else {
+        strapi.log.warn(`Failed to send result email to ${lead.email}: ${emailResult.reason}`);
+      }
+      
+      return emailResult;
+    } catch (error) {
+      strapi.log.error('Error sending result email:', error);
+      return { success: false, error: error.message };
     }
   },
 

@@ -136,6 +136,14 @@ const CONDITIONAL_LOGIC_TEMPLATES = {
         allowBack: true,
         randomizeQuestions: false,
         conditionalLogic: true
+      },
+      resultDelivery: {
+        mode: 'show_and_email',
+        showOnScreen: true,
+        sendEmail: true,
+        emailRequired: false,
+        pageTitle: 'Ihre AI-Bedarfsanalyse',
+        pageSubtitle: 'Basierend auf Ihren Antworten haben wir eine personalisierte Empfehlung erstellt'
       }
     }
   },
