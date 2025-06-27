@@ -228,7 +228,7 @@ module.exports = [
     },
   },
   {
-    method: 'POST',
+    method: 'GET',
     path: '/setup-campaign/:slug',
     handler: async (ctx) => {
       try {
