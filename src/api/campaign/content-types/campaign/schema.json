@@ -65,9 +65,17 @@
         "behavior": {
           "showProgress": true,
           "allowBack": true,
-          "randomizeQuestions": false
+          "randomizeQuestions": false,
+          "conditionalLogic": false
         }
       }
+    },
+    "jsonCode": {
+      "type": "text",
+      "required": false,
+      "maxLength": 50000,
+      "default": "",
+      "description": "Raw JSON configuration for bot-generated campaigns. Will override config field when present."
     },
     "aiPromptTemplate": {
       "type": "text",

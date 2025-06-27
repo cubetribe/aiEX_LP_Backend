@@ -64,7 +64,7 @@ module.exports = [
             slug,
             isActive: true
           },
-          fields: ['title', 'slug', 'description', 'campaignType', 'status', 'isActive', 'config', 'aiPromptTemplate']
+          fields: ['title', 'slug', 'description', 'campaignType', 'status', 'isActive', 'config', 'jsonCode', 'aiPromptTemplate']
         });
 
         if (!campaigns || campaigns.length === 0) {
@@ -73,7 +73,20 @@ module.exports = [
           return;
         }
 
-        ctx.body = { data: campaigns[0] };
+        const campaign = campaigns[0];
+        
+        // Merge jsonCode with config if jsonCode is present
+        if (campaign.jsonCode && campaign.jsonCode.trim()) {
+          try {
+            const jsonConfig = JSON.parse(campaign.jsonCode);
+            campaign.config = { ...campaign.config, ...jsonConfig };
+            strapi.log.info(`Merged jsonCode config for campaign ${slug}`);
+          } catch (error) {
+            strapi.log.error(`Invalid JSON in jsonCode for campaign ${slug}:`, error);
+          }
+        }
+        
+        ctx.body = { data: campaign };
       } catch (error) {
         strapi.log.error('Error finding campaign by slug:', error);
         ctx.status = 500;
@@ -230,31 +243,70 @@ module.exports = [
           return;
         }
 
-        // Default quiz configuration
+        // Default quiz configuration with conditional logic example
         const defaultConfig = {
           title: 'AI Readiness Assessment',
           description: 'Discover how ready your business is for AI transformation',
           questions: [
             {
-              id: 'q1',
-              question: 'What is your current level of AI adoption?',
+              id: 'user_type',
+              question: 'Are you a private individual or business owner?',
               type: 'single-choice',
-              options: ['No AI usage', 'Exploring AI', 'Pilot projects', 'Full implementation'],
+              options: [
+                { value: 'private', label: 'Private Individual' },
+                { value: 'business', label: 'Business Owner' }
+              ],
               required: true,
               order: 1,
             },
             {
-              id: 'q2',
-              question: 'What are your main business challenges?',
-              type: 'multiple-choice',
-              options: ['Cost reduction', 'Efficiency', 'Customer experience', 'Innovation'],
+              id: 'business_size',
+              question: 'How many employees does your company have?',
+              type: 'single-choice',
+              options: ['1-10', '11-50', '51-200', '200+'],
               required: true,
               order: 2,
+              conditional: {
+                showIf: {
+                  field: 'user_type',
+                  operator: 'equals',
+                  value: 'business'
+                }
+              }
+            },
+            {
+              id: 'personal_goal',
+              question: 'What is your main goal with AI?',
+              type: 'single-choice',
+              options: ['Learning', 'Career advancement', 'Personal projects', 'Curiosity'],
+              required: true,
+              order: 2,
+              conditional: {
+                showIf: {
+                  field: 'user_type',
+                  operator: 'equals',
+                  value: 'private'
+                }
+              }
             },
           ],
           scoring: {
-            logic: 'weighted',
-            weights: {}
+            logic: 'conditional',
+            rules: [
+              {
+                if: { user_type: 'business', business_size: '200+' },
+                then: { leadScore: 90, leadQuality: 'hot' }
+              },
+              {
+                if: { user_type: 'business', business_size: '51-200' },
+                then: { leadScore: 70, leadQuality: 'warm' }
+              },
+              {
+                if: { user_type: 'private' },
+                then: { leadScore: 30, leadQuality: 'cold' }
+              }
+            ],
+            default: { leadScore: 50, leadQuality: 'warm' }
           },
           styling: {
             primaryColor: '#007bff',
@@ -263,7 +315,8 @@ module.exports = [
           behavior: {
             showProgress: true,
             allowBack: true,
-            randomizeQuestions: false
+            randomizeQuestions: false,
+            conditionalLogic: true
           }
         };
 
