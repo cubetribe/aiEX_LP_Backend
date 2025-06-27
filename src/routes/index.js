@@ -185,7 +185,7 @@ module.exports = [
           return;
         }
 
-        const campaign = await strapi.entityService.findOne('api::campaign.campaign', id);
+        const campaign = await strapi.entityService.findOne('api::campaign.campaign', parseInt(id));
 
         if (!campaign || !campaign.isActive) {
           ctx.status = 404;
