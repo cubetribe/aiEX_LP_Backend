@@ -17,8 +17,15 @@ module.exports = [
       enabled: true,
       headers: '*',
       origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
+        // Allow requests with no origin (like mobile apps, curl requests, Postman)
+        if (!origin) {
+          return callback(null, true);
+        }
+        
+        // Ensure origin is a string
+        if (typeof origin !== 'string') {
+          return callback(new Error('Invalid origin type'));
+        }
         
         const allowedOrigins = [
           'http://localhost:3000',           // Development
