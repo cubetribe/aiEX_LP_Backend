@@ -185,15 +185,18 @@ module.exports = [
           return;
         }
 
-        const campaign = await strapi.entityService.findOne('api::campaign.campaign', id, {
-          filters: {
-            isActive: true
-          }
-        });
+        const campaign = await strapi.entityService.findOne('api::campaign.campaign', id);
 
-        if (!campaign) {
+        if (!campaign || !campaign.isActive) {
           ctx.status = 404;
-          ctx.body = { error: 'Campaign not found or inactive' };
+          ctx.body = { 
+            error: 'Campaign not found or inactive',
+            debug: { 
+              id, 
+              found: !!campaign, 
+              isActive: campaign?.isActive 
+            }
+          };
           return;
         }
 
@@ -615,6 +618,273 @@ module.exports = [
         strapi.log.error('Error configuring result delivery:', error);
         ctx.status = 500;
         ctx.body = { error: 'Failed to configure result delivery' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'POST',
+    path: '/ai/test-prompt',
+    handler: async (ctx) => {
+      try {
+        const { promptTemplate, sampleDataId, providers, model } = ctx.request.body;
+
+        if (!promptTemplate) {
+          ctx.status = 400;
+          ctx.body = { error: 'Prompt template is required' };
+          return;
+        }
+
+        // Get AI Provider Service
+        const aiService = require('../services/ai-provider.service');
+        
+        // Get sample data
+        const sampleDataOptions = aiService.getSampleData();
+        const sampleData = sampleDataId 
+          ? sampleDataOptions.find(s => s.name === sampleDataId)?.data || sampleDataOptions[0].data
+          : sampleDataOptions[0].data;
+
+        // Test the prompt
+        const results = await aiService.testPrompt(promptTemplate, sampleData, {
+          providers: providers || ['openai', 'anthropic', 'gemini'],
+          model: model || 'auto'
+        });
+
+        ctx.body = {
+          success: true,
+          data: results
+        };
+
+      } catch (error) {
+        strapi.log.error('Error testing prompt:', error);
+        ctx.status = 500;
+        ctx.body = { 
+          success: false,
+          error: 'Failed to test prompt',
+          details: error.message 
+        };
+      }
+    },
+    config: {
+      auth: false, // TODO: Add admin authentication
+    },
+  },
+  {
+    method: 'GET',
+    path: '/ai/status',
+    handler: async (ctx) => {
+      try {
+        const aiService = require('../services/ai-provider.service');
+        const status = aiService.getStatus();
+        
+        ctx.body = {
+          success: true,
+          data: status
+        };
+      } catch (error) {
+        strapi.log.error('Error getting AI status:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to get AI status' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'GET',
+    path: '/ai/sample-data',
+    handler: async (ctx) => {
+      try {
+        const aiService = require('../services/ai-provider.service');
+        const sampleData = aiService.getSampleData();
+        
+        ctx.body = {
+          success: true,
+          data: sampleData
+        };
+      } catch (error) {
+        strapi.log.error('Error getting sample data:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to get sample data' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'GET',
+    path: '/ai/prompt-templates',
+    handler: async (ctx) => {
+      try {
+        // Load prompt templates
+        const templates = {
+          'business-analysis': {
+            name: 'Business AI-Analyse',
+            description: 'Für B2B-Leads mit Fokus auf Business-Potenzial',
+            template: `Erstelle eine personalisierte AI-Bedarfsanalyse für {{firstName}}.
+
+Basis-Informationen:
+- Name: {{firstName}}
+- E-Mail: {{email}}
+- Lead-Score: {{leadScore}}/100
+- Lead-Qualität: {{leadQuality}}
+
+Antworten aus dem Quiz:
+{{responses}}
+
+Erstelle eine professionelle, strukturierte Empfehlung mit folgenden Bereichen:
+1. 🎯 Persönliche Einschätzung (basierend auf den Antworten)
+2. 💡 AI-Potenzial für das Unternehmen/die Person
+3. 📋 Konkrete nächste Schritte
+4. 🚀 Individuelle Empfehlungen
+
+Stil: Professionell, präzise, actionable. Nutze Emojis für bessere Struktur.`
+          },
+          'personal-coaching': {
+            name: 'Personal AI-Coaching',
+            description: 'Für Privatpersonen mit Fokus auf persönliche Entwicklung',
+            template: `Erstelle ein personalisiertes AI-Coaching-Ergebnis für {{firstName}}.
+
+Lead-Informationen:
+- Name: {{firstName}}
+- Lead-Score: {{leadScore}}/100
+- Qualifikation: {{leadQuality}}
+
+Quiz-Antworten:
+{{responses}}
+
+Erstelle eine motivierende, persönliche Empfehlung:
+
+🎯 **Deine AI-Persönlichkeitsanalyse**
+[Basierend auf den Antworten eine persönliche Einschätzung]
+
+💡 **AI-Potenzial für dich**
+[Wie AI dir persönlich helfen kann]
+
+📚 **Empfohlene nächste Schritte**
+[Konkrete, umsetzbare Schritte]
+
+🚀 **Dein Weg zum AI-Experten**
+[Personalisierte Roadmap]
+
+Ton: Persönlich, motivierend, ermutigend aber professionell.`
+          },
+          'technical-assessment': {
+            name: 'Technische AI-Bewertung',
+            description: 'Für Tech-affine Zielgruppen mit detaillierten Empfehlungen',
+            template: `Technische AI-Expertise-Bewertung für {{firstName}}.
+
+Daten:
+- Lead-Score: {{leadScore}}/100
+- Qualifikation: {{leadQuality}}
+- Antworten: {{responses}}
+
+Erstelle eine technisch fundierte Analyse:
+
+## 🔍 Expertise-Level Analyse
+[Bewertung der aktuellen AI-Kenntnisse]
+
+## ⚙️ Technische Empfehlungen
+- Tools & Frameworks
+- APIs & Integrationen
+- Best Practices
+
+## 🛠 Implementation Roadmap
+[Schritt-für-Schritt technischer Plan]
+
+## 📊 ROI-Projektion
+[Erwartete Effizienzgewinne]
+
+## 🔗 Nützliche Ressourcen
+[Spezifische Tools und Links]
+
+Stil: Technisch präzise, aber verständlich. Fokus auf Umsetzbarkeit.`
+          },
+          'sales-focused': {
+            name: 'Sales-orientierte Empfehlung',
+            description: 'Optimiert für Lead-Konversion und Sales-Prozess',
+            template: `Sales-optimierte Empfehlung für {{firstName}} ({{leadQuality}} Lead).
+
+Lead-Details:
+- Score: {{leadScore}}/100
+- Antworten: {{responses}}
+
+Erstelle eine verkaufsfördernde Empfehlung:
+
+🔥 **Warum AI jetzt perfekt für Sie ist**
+[Urgency und Relevanz schaffen]
+
+💰 **Ihr ROI-Potenzial**
+[Konkrete Zahlen und Einsparungen]
+
+⏰ **Exklusive Chance**
+[Begrenzte Angebote oder Termine]
+
+📞 **Ihr nächster Schritt**
+[Klarer Call-to-Action]
+
+🎁 **Bonus für schnelle Entscheider**
+[Incentive für sofortige Aktion]
+
+Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber verkaufsstark.`
+          }
+        };
+
+        ctx.body = {
+          success: true,
+          data: Object.entries(templates).map(([id, template]) => ({
+            id,
+            ...template
+          }))
+        };
+      } catch (error) {
+        strapi.log.error('Error getting prompt templates:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to get prompt templates' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'GET',
+    path: '/debug/campaigns',
+    handler: async (ctx) => {
+      try {
+        // Set CORS headers
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          ctx.set('Access-Control-Allow-Origin', origin);
+          ctx.set('Access-Control-Allow-Credentials', 'true');
+          ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+
+        const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
+          fields: ['id', 'title', 'slug', 'isActive', 'status'],
+          sort: 'id:asc'
+        });
+
+        ctx.body = {
+          success: true,
+          data: {
+            campaigns,
+            count: campaigns.length,
+            routes: {
+              bySlug: campaigns.map(c => `/campaigns/${c.slug}/submit`),
+              byId: campaigns.map(c => `/campaigns/${c.id}/submit`)
+            }
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error in debug campaigns:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Debug failed' };
       }
     },
     config: {

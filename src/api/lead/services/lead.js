@@ -403,21 +403,35 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
    */
   async sendResultEmail(lead, campaignData, aiResult) {
     try {
-      const emailService = require('../../services/email.service');
+      const emailService = require('../../../services/email.service');
       const campaign = await strapi.entityService.findOne('api::campaign.campaign', campaignData.id);
+      
+      // Check if email service is configured
+      if (!emailService.isConfigured) {
+        strapi.log.info('Email service not configured - skipping email send');
+        return { 
+          success: false, 
+          reason: 'Email service not configured',
+          skipReason: 'NO_EMAIL_CONFIG'
+        };
+      }
       
       const emailResult = await emailService.sendResultEmail(lead, campaign, aiResult);
       
       if (emailResult.success) {
         strapi.log.info(`Result email sent to ${lead.email}: ${emailResult.messageId}`);
       } else {
-        strapi.log.warn(`Failed to send result email to ${lead.email}: ${emailResult.reason}`);
+        strapi.log.warn(`Failed to send result email to ${lead.email}: ${emailResult.reason || emailResult.error}`);
       }
       
       return emailResult;
     } catch (error) {
       strapi.log.error('Error sending result email:', error);
-      return { success: false, error: error.message };
+      return { 
+        success: false, 
+        error: error.message,
+        skipReason: 'EMAIL_SERVICE_ERROR'
+      };
     }
   },
 
