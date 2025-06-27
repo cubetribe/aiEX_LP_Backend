@@ -326,10 +326,10 @@ Key environment variables (see .env.example):
   DATABASE_CLIENT=postgres
   STRAPI_ADMIN_BACKEND_URL=https://web-production-6df54.up.railway.app
 
-  # API Keys (konfiguriert):
-  OPENAI_API_KEY=sk-proj-pcfuqnMTeKR3hatoI_d7QoMu...
-  ANTHROPIC_API_KEY=sk-ant-api03-fr62NbubD498Z2M9ojU9GA...
-  GOOGLE_API_KEY=AIzaSyCKmnToIDYn_BSJasnmvkTriYWZXrpVXNs
+  # API Keys (konfiguriert - NICHT IN ÖFFENTLICHEN FILES SPEICHERN):
+  OPENAI_API_KEY=[REDACTED - Set in Railway Environment]
+  ANTHROPIC_API_KEY=[REDACTED - Set in Railway Environment]  
+  GOOGLE_API_KEY=[REDACTED - Set in Railway Environment]
 
   ---
   🚀 NÄCHSTE SCHRITTE - ROADMAP:
