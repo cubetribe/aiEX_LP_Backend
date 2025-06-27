@@ -31,8 +31,8 @@ module.exports = {
 
     if (envReport.isValid) {
       try {
-        // Configure API permissions for public routes
-        await configurePublicPermissions(strapi);
+        // Register global routes
+        await registerGlobalRoutes(strapi);
         
         strapi.log.info('⚠️ All custom services temporarily disabled for stable deployment');
         strapi.log.info('🔧 Only core Strapi functionality is active');
@@ -55,59 +55,21 @@ module.exports = {
 };
 
 /**
- * Configure public API permissions
+ * Register global routes
  */
-async function configurePublicPermissions(strapi) {
+async function registerGlobalRoutes(strapi) {
   try {
-    strapi.log.info('🔐 Configuring public API permissions...');
-
-    // Find or create public role
-    let publicRole = await strapi.query('plugin::users-permissions.role').findOne({
-      where: { type: 'public' }
+    strapi.log.info('🛣️ Registering global routes...');
+    
+    const globalRoutes = require('./routes');
+    
+    // Add routes to Strapi server
+    globalRoutes.forEach(route => {
+      strapi.server.router[route.method.toLowerCase()](route.path, route.handler);
     });
-
-    if (!publicRole) {
-      strapi.log.info('Creating public role...');
-      publicRole = await strapi.query('plugin::users-permissions.role').create({
-        data: {
-          name: 'Public',
-          description: 'Default role given to unauthenticated user.',
-          type: 'public'
-        }
-      });
-    }
-
-    // Configure campaign permissions
-    const campaignPermissions = [
-      'findPublic',
-      'findBySlug', 
-      'submitLead'
-    ];
-
-    for (const action of campaignPermissions) {
-      await strapi.query('plugin::users-permissions.permission').updateMany({
-        where: {
-          role: publicRole.id,
-          action: `api::campaign.campaign.${action}`
-        },
-        data: { enabled: true }
-      });
-    }
-
-    // Also enable basic lead creation for submissions
-    await strapi.query('plugin::users-permissions.permission').updateMany({
-      where: {
-        role: publicRole.id,
-        action: 'api::lead.lead.create'
-      },
-      data: { enabled: true }
-    });
-
-    strapi.log.info('✅ Public API permissions configured successfully');
+    
+    strapi.log.info('✅ Global routes registered successfully');
   } catch (error) {
-    strapi.log.warn('⚠️ Could not configure permissions automatically:', error.message);
-    strapi.log.info('📝 Please configure permissions manually in Admin Panel:');
-    strapi.log.info('   Settings → Users & Permissions → Public Role');
-    strapi.log.info('   Enable: findPublic, findBySlug, submitLead for Campaign');
+    strapi.log.warn('⚠️ Could not register global routes:', error.message);
   }
 }
