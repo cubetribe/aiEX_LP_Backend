@@ -48,6 +48,34 @@
       "type": "boolean",
       "default": false
     },
+    "aiPromptTemplate": {
+      "type": "text",
+      "required": false,
+      "maxLength": 5000,
+      "default": "Erstelle basierend auf den folgenden Antworten ein personalisiertes Ergebnis:\n\n{{responses}}\n\nKampagne: {{campaignTitle}}"
+    },
+    "aiProvider": {
+      "type": "enumeration",
+      "enum": ["openai", "claude", "gemini", "auto"],
+      "default": "auto"
+    },
+    "aiModel": {
+      "type": "string",
+      "maxLength": 50,
+      "default": "gpt-4"
+    },
+    "aiTemperature": {
+      "type": "decimal",
+      "min": 0,
+      "max": 2,
+      "default": 0.7
+    },
+    "aiMaxTokens": {
+      "type": "integer",
+      "min": 100,
+      "max": 4000,
+      "default": 1000
+    },
     "leads": {
       "type": "relation",
       "relation": "oneToMany",
