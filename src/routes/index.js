@@ -11,6 +11,15 @@ module.exports = [
     path: '/campaigns/public',
     handler: async (ctx) => {
       try {
+        // Set CORS headers manually
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          ctx.set('Access-Control-Allow-Origin', origin);
+          ctx.set('Access-Control-Allow-Credentials', 'true');
+          ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+
         const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
           filters: {
             isActive: true,
@@ -41,6 +50,15 @@ module.exports = [
       const { slug } = ctx.params;
 
       try {
+        // Set CORS headers manually
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          ctx.set('Access-Control-Allow-Origin', origin);
+          ctx.set('Access-Control-Allow-Credentials', 'true');
+          ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+
         const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
           filters: {
             slug,
@@ -74,6 +92,15 @@ module.exports = [
       const { firstName, email, responses } = ctx.request.body;
 
       try {
+        // Set CORS headers manually
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          ctx.set('Access-Control-Allow-Origin', origin);
+          ctx.set('Access-Control-Allow-Credentials', 'true');
+          ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+
         if (!firstName || !email) {
           ctx.status = 400;
           ctx.body = { error: 'firstName and email are required' };
