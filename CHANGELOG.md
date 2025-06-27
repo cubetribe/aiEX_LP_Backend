@@ -9,10 +9,163 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Geplant
 - Email-Integration mit Nodemailer
-- Frontend React-Anwendung
 - Advanced Analytics Dashboard
 - Multi-Language Support
 - Webhook-Integration für Third-Party-Services
+
+## [0.4.0] - 2025-06-27 - CONDITIONAL LOGIC MAJOR RELEASE 🚀
+
+### 🎯 Hinzugefügt - Conditional Logic System
+
+#### Frontend Conditional Logic Engine
+- **Dynamic Question Routing**: Fragen erscheinen/verschwinden basierend auf vorherigen Antworten
+- **Operators Support**: `equals`, `not_equals`, `in`, `not_in` für flexible Bedingungslogik
+- **Real-time Updates**: Fragensichtbarkeit wird nach jeder Antwort neu berechnet
+- **TypeScript Types**: Neue `ConditionalRule` und erweiterte `QuizQuestion` Interfaces
+- **Privat vs. Gewerblich Flow**: Intelligente Weiterleitung basierend auf Benutzertyp
+
+#### AI Model Management System
+- **10 aktuelle AI-Modelle** mit provider-spezifischer Auswahl
+- **Deutsche Beschreibungen** für jedes Modell mit Anwendungsempfehlungen
+- **Auto-Validierung** zwischen AI-Modell und Provider-Auswahl
+- **Kosten/Performance-Transparenz** in der Modellauswahl
+
+**Verfügbare Modelle:**
+```
+OpenAI:
+- gpt-4.5 (komplexe Aufgaben & Kreativität)
+- gpt-4.1 (Coding & Business-Analyse)
+- gpt-4o (schnell, günstig, multimodal)
+- gpt-4o-mini (Standard-Chats)
+- gpt-4-turbo (Performance + großer Kontext)
+- gpt-3.5-turbo (einfache Aufgaben)
+
+Anthropic:
+- claude-opus-3.7 (tiefes Reasoning)
+- claude-sonnet-3.7 (präzise Sprache)
+
+Google:
+- gemini-2.5-pro (multimodal + Web)
+- gemini-2.5-flash (schnell + leichtgewichtig)
+```
+
+#### Campaign Preview System
+- **Auto-generierte Preview-URLs** für jede Kampagne
+- **Live Preview Button** im Admin Panel
+- **URL kopieren Funktionalität** für einfaches Teilen
+- **Lifecycle Hooks** aktualisieren URLs automatisch bei Slug-Änderungen
+
+#### Bot Integration Infrastructure
+- **jsonCode Field** (50.000 Zeichen) für bot-generierte Konfigurationen
+- **Auto-Merge Logik** kombiniert jsonCode mit bestehender Config
+- **Override-Fähigkeit** - jsonCode hat Vorrang vor UI-Config
+- **Error Handling** für ungültiges JSON mit Fallback zur UI-Config
+
+**Bot-Integration Workflow:**
+1. ChatBot generiert komplettes Quiz-JSON
+2. User fügt JSON in jsonCode Field ein
+3. System merged automatisch mit bestehender Konfiguration
+4. Conditional Logic funktioniert sofort
+
+#### Complete Lead Management System
+- **Neuer Lead Content-Type** mit umfassendem Schema
+- **Enhanced Scoring Engine** mit Support für conditional rules
+- **Intelligente Privat vs. Gewerblich Logik**
+- **Duale API-Routen** für maximale Frontend-Kompatibilität
+
+**Scoring-Logik:**
+- **Unternehmer 200+ Mitarbeiter**: 95 Punkte (hot lead)
+- **Unternehmer 1-10 Mitarbeiter**: 60 Punkte (warm lead)
+- **Privatperson Über 100k**: 50 Punkte (warm lead)
+- **Privatperson Standard**: 35 Punkte (cold lead)
+
+### 🔧 Technische Verbesserungen
+
+#### Database Schema Änderungen
+```json
+// Campaign Content-Type Erweiterungen
+{
+  "jsonCode": "text(50000)", // Bot-generierte Konfigurationen
+  "previewUrl": "string(500)", // Auto-generierte Preview-Links
+  "aiModel": "enum[gpt-4.5, claude-opus-3.7, ...]" // Erweiterte Modell-Liste
+}
+
+// Neuer Lead Content-Type
+{
+  "firstName": "string(100)",
+  "email": "email(255)",
+  "responses": "json",
+  "leadScore": "integer(0-100)",
+  "leadQuality": "enum[hot,warm,cold,unqualified]",
+  "aiProcessingStatus": "enum[pending,processing,completed,failed]",
+  "aiResult": "text(10000)",
+  "gdprConsent": "boolean",
+  "campaign": "relation(manyToOne)"
+}
+```
+
+#### Enhanced API Routes
+- **Campaign Loading**: Erweiterte `/campaigns/public/:slug` mit jsonCode Support
+- **Lead Submission**: Sowohl `/campaigns/:slug/submit` ALS AUCH `/campaigns/:id/submit`
+- **Setup Route**: Erweiterte `/setup-campaign/:slug` mit Conditional Logic Beispiel
+
+### 🐛 Behoben
+
+#### Railway Deployment Issues
+- **npm ci Fehler behoben** mit Node.js Version Mismatch (lokal v24 vs Railway v20)
+- **Gewechselt zu npm install** für bessere Kompatibilität zwischen Node-Versionen
+- **Dockerfile aktualisiert** mit explizitem `--production=false` Flag
+
+#### CORS und API-Kompatibilität
+- **Duale Lead Submission Routen** - Frontend nutzt Campaign-ID, Backend erwartet beide
+- **Erweiterte CORS Headers** - Manuelle Headers für Vercel Deployment-Kompatibilität
+- **API Response Standardisierung** - Konsistente Error/Success Response-Formate
+
+### 📋 Geänderte Dateien
+
+**Neue Dateien (8):**
+```
+src/api/lead/content-types/lead/schema.json
+src/api/lead/services/lead.js
+src/utils/ai-model-validation.js
+src/api/campaign/content-types/campaign/lifecycles.js
+src/admin/app.js
+src/admin/extensions/campaign-preview-field.js
+CHANGELOG.md (diese Datei)
+```
+
+**Geänderte Dateien (6):**
+```
+src/api/campaign/content-types/campaign/schema.json - jsonCode + previewUrl + aiModel enum
+src/routes/index.js - Erweiterte Routen + conditional Beispiel + lead submission
+Frontend-Deploy/components/campaign/quiz-campaign.tsx - Conditional Logic Engine
+Frontend-Deploy/lib/types.ts - ConditionalRule Interface
+Dockerfile - npm install Kompatibilitäts-Fix
+CLAUDE.md - Komplette Dokumentations-Aktualisierung
+```
+
+### 🎯 Business Impact
+
+Dieses Release transformiert die Plattform von einem einfachen Quiz-Tool zu einer **anspruchsvollen Conditional Logic Engine** mit folgenden Möglichkeiten:
+
+- **Dynamische User Journeys** basierend auf individuellen Antworten
+- **Intelligente Lead-Qualifizierung** mit business-spezifischer Bewertung
+- **Bot-generierte Kampagnen** Support für schnelle Deployment
+- **Professionelle AI-Modell-Auswahl** mit Kosten-Transparenz
+- **Streamlined Campaign-Testing** mit sofortiger Preview-Funktionalität
+
+Das System ist nun bereit für **produktions-skalierte Lead-Generierung** mit **enterprise-level conditional logic capabilities**.
+
+### 🚀 Deployment Information
+
+**Git Commits:**
+- `c6a2ce8` - MASSIVE UPDATE: Complete Conditional Logic + Lead Infrastructure
+- `66ccf32` - Fix Railway npm ci error (Node.js compatibility)
+
+**URLs:**
+- Frontend: https://aiex-quiz-platform-519nmqcf0-cubetribes-projects.vercel.app
+- Backend: https://web-production-6df54.up.railway.app
+- Test Quiz: /campaign/test-quiz
 
 ## [0.3.0] - 2024-06-26
 

@@ -440,3 +440,87 @@ Key environment variables (see .env.example):
 
   ---
   Stand: 27.06.2025 11:20 CET - Frontend funktioniert vollständig! ✅🚀
+
+  ===================================================================
+  
+  ⚡ PROJEKT FORTSCHRITT - SESSION 27.06.2025 (22:00-23:00 CET) ⚡
+
+  🎯 GROSSE SYSTEM-ERWEITERUNG: CONDITIONAL LOGIC + COMPLETE INFRASTRUCTURE
+
+  ✅ ERFOLGREICH IMPLEMENTIERT:
+
+  1. Frontend Conditional Logic System:
+  
+  - ✅ Quiz-Component erweitert für dynamische Fragen
+  - ✅ showIf-Logik mit Operatoren: equals, not_equals, in, not_in
+  - ✅ Automatische Neuberechnung sichtbarer Fragen nach Antworten
+  - ✅ TypeScript Types erweitert: ConditionalRule, QuizQuestion
+  - ✅ Frontend/lib/types.ts - Neue Interface-Definitionen
+  - ✅ Frontend/components/campaign/quiz-campaign.tsx - Conditional Logic Engine
+
+  2. Backend AI Model Management:
+
+  - ✅ AI Model Dropdown mit 10 aktuellen Modellen
+  - ✅ Provider-spezifische Modelle mit deutschen Beschreibungen:
+    * gpt-4.5 - OpenAI – bestes Modell für komplexe Aufgaben & Kreativität
+    * claude-opus-3.7 - Anthropic – tiefes Reasoning & Textverständnis  
+    * gemini-2.5-pro - Google – top bei multimodalem Input & Webverknüpfung
+  - ✅ AI Model Validation System (src/utils/ai-model-validation.js)
+  - ✅ Automatische Provider-Model-Matching mit Warnungen
+
+  3. Campaign Preview System:
+
+  - ✅ Automatische Preview-URL Generation via Lifecycle Hooks
+  - ✅ Preview Button im Admin Panel mit Live-Link
+  - ✅ "URL kopieren" Funktionalität
+  - ✅ Frontend-Base-URL automatische Erkennung
+  - ✅ src/api/campaign/content-types/campaign/lifecycles.js
+
+  4. Bot-Integration Infrastructure:
+
+  - ✅ jsonCode Field (50.000 Zeichen) für Bot-generierte Kampagnen
+  - ✅ Automatisches Merge von jsonCode mit bestehender config
+  - ✅ Backend-Logik für Config-Übersteuerung durch JSON
+  - ✅ Vorbereitung für ChatBot-generierte Quiz-Konfigurationen
+
+  5. Complete Lead Management System:
+
+  - ✅ Lead Content-Type vollständig implementiert
+  - ✅ Lead Service mit Enhanced Scoring 
+  - ✅ Conditional Scoring basierend auf Campaign-Rules
+  - ✅ Intelligente Privat vs. Gewerblich Bewertung
+  - ✅ API-Routes: /campaigns/:slug/submit UND /campaigns/:id/submit
+
+  6. Conditional Logic Beispiel-Implementation:
+
+  - ✅ Privat vs. Gewerblich Quiz-Flow
+  - ✅ Dynamische Fragenpfade:
+    * Privatperson → Einkommen + Ziele (Score: 35-50)
+    * Unternehmer → Mitarbeiter + Branche (Score: 60-95)
+  - ✅ Conditional Scoring Rules im JSON-Format
+  - ✅ Enhanced Setup-Route mit deutschem Beispiel-Quiz
+
+  🚀 DEPLOYMENT STATUS:
+
+  ✅ Git Commits: 
+  - c6a2ce8: MASSIVE UPDATE - Complete Conditional Logic + Lead Infrastructure
+  - 66ccf32: Railway npm ci fix (Node.js compatibility)
+  ⏳ Railway: Rebuilding with npm install fix
+  ✅ Frontend: https://aiex-quiz-platform-519nmqcf0-cubetribes-projects.vercel.app
+  ⏳ Backend: https://web-production-6df54.up.railway.app
+
+  🎯 CONDITIONAL LOGIC FLOW:
+
+  Q1: "Privatperson oder Unternehmer?"
+  ├── Privatperson → Einkommen + Ziele → Score: 35-50
+  └── Unternehmer → Mitarbeiter + Branche → Score: 60-95
+
+  🤖 BOT-INTEGRATION READY:
+  
+  1. Bot generates JSON config
+  2. Paste into jsonCode field  
+  3. Auto-merge with existing config
+  4. Conditional logic works immediately
+
+  ---
+  Stand: 27.06.2025 23:00 CET - Conditional Logic System implementiert! ⚡🎯
