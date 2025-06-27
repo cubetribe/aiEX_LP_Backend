@@ -395,4 +395,101 @@ module.exports = [
       auth: false, // No authentication required for this temporary route
     },
   },
+  {
+    method: 'GET',
+    path: '/conditional-logic/templates',
+    handler: async (ctx) => {
+      try {
+        // Import template utility
+        const { getAllTemplates, getCategories } = require('../utils/conditional-logic-templates');
+        
+        const templates = getAllTemplates();
+        const categories = getCategories();
+        
+        ctx.body = {
+          data: {
+            templates,
+            categories
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error loading templates:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to load templates' };
+      }
+    },
+    config: {
+      auth: false, // Allow frontend access for template preview
+    },
+  },
+  {
+    method: 'GET',
+    path: '/conditional-logic/templates/:templateId',
+    handler: async (ctx) => {
+      try {
+        const { templateId } = ctx.params;
+        const { getTemplate } = require('../utils/conditional-logic-templates');
+        
+        const template = getTemplate(templateId);
+        
+        if (!template) {
+          ctx.status = 404;
+          ctx.body = { error: 'Template not found' };
+          return;
+        }
+        
+        ctx.body = { data: template };
+      } catch (error) {
+        strapi.log.error('Error loading template:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to load template' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'POST',
+    path: '/conditional-logic/validate',
+    handler: async (ctx) => {
+      try {
+        const { config } = ctx.request.body;
+        const { validateTemplate } = require('../utils/conditional-logic-templates');
+        
+        if (!config) {
+          ctx.status = 400;
+          ctx.body = { error: 'Config is required' };
+          return;
+        }
+        
+        let parsedConfig;
+        if (typeof config === 'string') {
+          try {
+            parsedConfig = JSON.parse(config);
+          } catch (parseError) {
+            ctx.status = 400;
+            ctx.body = { 
+              error: 'Invalid JSON format',
+              details: parseError.message 
+            };
+            return;
+          }
+        } else {
+          parsedConfig = config;
+        }
+        
+        const validation = validateTemplate(parsedConfig);
+        
+        ctx.body = { data: validation };
+      } catch (error) {
+        strapi.log.error('Error validating template:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to validate template' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
 ];
