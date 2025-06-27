@@ -16,17 +16,32 @@ module.exports = [
     config: {
       enabled: true,
       headers: '*',
-      origin: [
-        'http://localhost:3000',           // Development
-        'http://localhost:3001',           // Alternative dev port
-        'https://quiz.goaiex.com',         // Production frontend
-        'https://www.quiz.goaiex.com',     // Production frontend with www
-        'https://api.quiz.goaiex.com',     // API domain
-        'https://admin.quiz.goaiex.com',   // Admin panel
-        'https://aiex-quiz-platform-74aqwr4a9-cubetribes-projects.vercel.app', // Vercel deployment
-        'https://aiex-quiz-platform.vercel.app', // Vercel custom domain
-        'https://*.vercel.app',            // All Vercel subdomains
-      ],
+      origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
+          'http://localhost:3000',           // Development
+          'http://localhost:3001',           // Alternative dev port
+          'https://quiz.goaiex.com',         // Production frontend
+          'https://www.quiz.goaiex.com',     // Production frontend with www
+          'https://api.quiz.goaiex.com',     // API domain
+          'https://admin.quiz.goaiex.com',   // Admin panel
+          'https://aiex-quiz-platform.vercel.app', // Vercel custom domain
+        ];
+        
+        // Allow all vercel.app subdomains
+        if (origin.endsWith('.vercel.app')) {
+          return callback(null, true);
+        }
+        
+        // Check against allowed origins
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        
+        return callback(new Error('Not allowed by CORS'));
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
     },
