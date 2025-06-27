@@ -151,6 +151,68 @@ module.exports = [
   },
   {
     method: 'POST',
+    path: '/campaigns/:id/submit',
+    handler: async (ctx) => {
+      const { id } = ctx.params;
+      const { firstName, email, responses } = ctx.request.body;
+
+      try {
+        // Set CORS headers manually
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          ctx.set('Access-Control-Allow-Origin', origin);
+          ctx.set('Access-Control-Allow-Credentials', 'true');
+          ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+
+        if (!firstName || !email) {
+          ctx.status = 400;
+          ctx.body = { error: 'firstName and email are required' };
+          return;
+        }
+
+        const campaign = await strapi.entityService.findOne('api::campaign.campaign', id, {
+          filters: {
+            isActive: true
+          }
+        });
+
+        if (!campaign) {
+          ctx.status = 404;
+          ctx.body = { error: 'Campaign not found or inactive' };
+          return;
+        }
+
+        const lead = await strapi.service('api::lead.lead').processLeadSubmission({
+          firstName,
+          email,
+          responses: responses || {},
+          campaign: campaign.id
+        });
+
+        strapi.log.info(`Lead submitted: ${email} to campaign ID ${id}`);
+
+        ctx.body = { 
+          data: {
+            id: lead.id,
+            leadScore: lead.leadScore,
+            leadQuality: lead.leadQuality,
+            message: 'Lead submitted successfully'
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error submitting lead by ID:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to submit lead' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'POST',
     path: '/setup-campaign/:slug',
     handler: async (ctx) => {
       try {
