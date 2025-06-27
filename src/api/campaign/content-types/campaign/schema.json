@@ -47,6 +47,12 @@
     "isActive": {
       "type": "boolean",
       "default": false
+    },
+    "leads": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::lead.lead",
+      "mappedBy": "campaign"
     }
   }
 }
