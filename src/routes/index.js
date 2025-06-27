@@ -243,25 +243,22 @@ module.exports = [
           return;
         }
 
-        // Default quiz configuration with conditional logic example
+        // Privat vs. Gewerblich Quiz mit konditioneller Logik
         const defaultConfig = {
-          title: 'AI Readiness Assessment',
-          description: 'Discover how ready your business is for AI transformation',
+          title: 'AI-Bedarfsanalyse',
+          description: 'Finden Sie heraus, wie KI Ihnen helfen kann',
           questions: [
             {
               id: 'user_type',
-              question: 'Are you a private individual or business owner?',
+              question: 'Sind Sie Privatperson oder Unternehmer?',
               type: 'single-choice',
-              options: [
-                { value: 'private', label: 'Private Individual' },
-                { value: 'business', label: 'Business Owner' }
-              ],
+              options: ['Privatperson', 'Unternehmer'],
               required: true,
               order: 1,
             },
             {
-              id: 'business_size',
-              question: 'How many employees does your company have?',
+              id: 'company_size',
+              question: 'Wie viele Mitarbeiter hat Ihr Unternehmen?',
               type: 'single-choice',
               options: ['1-10', '11-50', '51-200', '200+'],
               required: true,
@@ -270,40 +267,94 @@ module.exports = [
                 showIf: {
                   field: 'user_type',
                   operator: 'equals',
-                  value: 'business'
+                  value: 'Unternehmer'
                 }
               }
             },
             {
-              id: 'personal_goal',
-              question: 'What is your main goal with AI?',
+              id: 'business_industry',
+              question: 'In welcher Branche sind Sie tätig?',
               type: 'single-choice',
-              options: ['Learning', 'Career advancement', 'Personal projects', 'Curiosity'],
+              options: ['Technologie', 'Handel', 'Dienstleistung', 'Produktion', 'Andere'],
+              required: true,
+              order: 3,
+              conditional: {
+                showIf: {
+                  field: 'user_type',
+                  operator: 'equals',
+                  value: 'Unternehmer'
+                }
+              }
+            },
+            {
+              id: 'private_income',
+              question: 'In welcher Einkommensklasse befinden Sie sich?',
+              type: 'single-choice',
+              options: ['Unter 30k', '30k-60k', '60k-100k', 'Über 100k'],
               required: true,
               order: 2,
               conditional: {
                 showIf: {
                   field: 'user_type',
                   operator: 'equals',
-                  value: 'private'
+                  value: 'Privatperson'
                 }
               }
             },
+            {
+              id: 'private_goal',
+              question: 'Was ist Ihr Hauptziel mit KI?',
+              type: 'single-choice',
+              options: ['Weiterbildung', 'Karriere', 'Nebeneinkommen', 'Persönliche Projekte'],
+              required: true,
+              order: 3,
+              conditional: {
+                showIf: {
+                  field: 'user_type',
+                  operator: 'equals',
+                  value: 'Privatperson'
+                }
+              }
+            },
+            {
+              id: 'ai_experience',
+              question: 'Wie viel Erfahrung haben Sie mit KI-Tools?',
+              type: 'single-choice',
+              options: ['Keine', 'Wenig', 'Mittel', 'Viel'],
+              required: true,
+              order: 4,
+            }
           ],
           scoring: {
             logic: 'conditional',
             rules: [
               {
-                if: { user_type: 'business', business_size: '200+' },
-                then: { leadScore: 90, leadQuality: 'hot' }
+                if: { user_type: 'Unternehmer', company_size: '200+' },
+                then: { leadScore: 95, leadQuality: 'hot' }
               },
               {
-                if: { user_type: 'business', business_size: '51-200' },
+                if: { user_type: 'Unternehmer', company_size: '51-200' },
+                then: { leadScore: 80, leadQuality: 'hot' }
+              },
+              {
+                if: { user_type: 'Unternehmer', company_size: '11-50' },
                 then: { leadScore: 70, leadQuality: 'warm' }
               },
               {
-                if: { user_type: 'private' },
-                then: { leadScore: 30, leadQuality: 'cold' }
+                if: { user_type: 'Unternehmer', company_size: '1-10' },
+                then: { leadScore: 60, leadQuality: 'warm' }
+              },
+              {
+                if: { user_type: 'Privatperson', private_income: 'Über 100k' },
+                then: { leadScore: 50, leadQuality: 'warm' }
+              },
+              {
+                if: { user_type: 'Privatperson', private_income: '60k-100k' },
+                then: { leadScore: 40, leadQuality: 'cold' }
+              },
+              {
+                if: { user_type: 'Privatperson' },
+                then: { leadScore: 35, leadQuality: 'cold' }
               }
             ],
             default: { leadScore: 50, leadQuality: 'warm' }

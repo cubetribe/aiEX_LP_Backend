@@ -50,6 +50,27 @@
       "type": "enumeration",
       "enum": ["hot", "warm", "cold", "unqualified"],
       "default": "cold"
+    },
+    "aiProcessingStatus": {
+      "type": "enumeration", 
+      "enum": ["pending", "processing", "completed", "failed"],
+      "default": "pending"
+    },
+    "aiResult": {
+      "type": "text",
+      "maxLength": 10000
+    },
+    "gdprConsent": {
+      "type": "boolean",
+      "default": false
+    },
+    "ipAddress": {
+      "type": "string",
+      "maxLength": 45
+    },
+    "userAgent": {
+      "type": "string", 
+      "maxLength": 500
     }
   }
 }

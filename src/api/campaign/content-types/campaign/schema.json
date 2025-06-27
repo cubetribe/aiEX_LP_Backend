@@ -77,6 +77,12 @@
       "default": "",
       "description": "Raw JSON configuration for bot-generated campaigns. Will override config field when present."
     },
+    "previewUrl": {
+      "type": "string",
+      "required": false,
+      "maxLength": 500,
+      "description": "Auto-generated preview URL for this campaign"
+    },
     "aiPromptTemplate": {
       "type": "text",
       "required": false,
@@ -89,9 +95,20 @@
       "default": "auto"
     },
     "aiModel": {
-      "type": "string",
-      "maxLength": 50,
-      "default": "gpt-4"
+      "type": "enumeration",
+      "enum": [
+        "gpt-4.5",                
+        "gpt-4.1",                
+        "gpt-4o",                 
+        "gpt-4o-mini",            
+        "gpt-4-turbo",            
+        "gpt-3.5-turbo",          
+        "claude-opus-3.7",        
+        "claude-sonnet-3.7",      
+        "gemini-2.5-pro",         
+        "gemini-2.5-flash"        
+      ],
+      "default": "gpt-4o"
     },
     "aiTemperature": {
       "type": "decimal",
