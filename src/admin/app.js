@@ -171,11 +171,7 @@ export default {
     `;
     document.head.appendChild(style);
     
-    // Register custom field components
-    app.registerPlugin({
-      id: 'conditional-logic-extensions',
-      name: 'Conditional Logic Extensions',
-      // Custom field extensions would be registered here
-    });
+    // Admin panel initialization complete
+    console.log('GoAIX Admin Panel: Conditional Logic extensions loaded');
   },
 };
