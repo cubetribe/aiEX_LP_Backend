@@ -9,8 +9,8 @@ WORKDIR /app
 # Kopiert nur die package-Dateien, um den npm-Cache-Layer zu nutzen
 COPY package.json package-lock.json ./
 
-# Installiert Dependencies deterministisch
-RUN npm ci
+# Installiert Dependencies (npm install für bessere Kompatibilität)
+RUN npm install --production=false
 
 # Der entscheidende Fix von Ihnen: explizite SWC-Binary für GNU/Linux (glibc)
 RUN npm install @swc/core-linux-x64-gnu
