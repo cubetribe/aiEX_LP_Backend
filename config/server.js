@@ -72,6 +72,8 @@ module.exports = ({ env }) => ({
       'https://www.quiz.goaiex.com',    // Production frontend with www
       'https://api.quiz.goaiex.com',    // API domain
       'https://admin.quiz.goaiex.com',  // Admin panel
+      'https://aiex-quiz-platform-skytxclkj-cubetribes-projects.vercel.app', // Current Vercel deployment
+      'https://*.vercel.app',           // All Vercel domains
       ...(env('ADDITIONAL_CORS_ORIGINS', '').split(',').filter(Boolean))
     ],
     credentials: true,
