@@ -64,7 +64,7 @@ module.exports = [
             slug,
             isActive: true
           },
-          fields: ['title', 'slug', 'description', 'campaignType', 'status', 'isActive', 'config', 'jsonCode', 'aiPromptTemplate']
+          fields: ['title', 'slug', 'description', 'campaignType', 'status', 'isActive', 'config', 'jsonCode', 'previewUrl', 'aiPromptTemplate']
         });
 
         if (!campaigns || campaigns.length === 0) {

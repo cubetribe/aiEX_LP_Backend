@@ -5,17 +5,17 @@
  */
 
 const AI_MODEL_PROVIDERS = {
-  // OpenAI Models
-  'gpt-4.5': 'openai',
-  'gpt-4.1': 'openai', 
-  'gpt-4o': 'openai',
-  'gpt-4o-mini': 'openai',
-  'gpt-4-turbo': 'openai',
-  'gpt-3.5-turbo': 'openai',
+  // ChatGPT Models (OpenAI)
+  'gpt-4.5': 'chatgpt',
+  'gpt-4.1': 'chatgpt', 
+  'gpt-4o': 'chatgpt',
+  'gpt-4o-mini': 'chatgpt',
+  'gpt-4-turbo': 'chatgpt',
+  'gpt-3.5-turbo': 'chatgpt',
   
   // Anthropic Claude Models
-  'claude-opus-3.7': 'claude',
-  'claude-sonnet-3.7': 'claude',
+  'claude-opus-3.7': 'anthropic',
+  'claude-sonnet-3.7': 'anthropic',
   
   // Google Gemini Models
   'gemini-2.5-pro': 'gemini',
@@ -23,42 +23,42 @@ const AI_MODEL_PROVIDERS = {
 };
 
 const MODEL_CAPABILITIES = {
-  // OpenAI Models
+  // ChatGPT Models (OpenAI)
   'gpt-4.5': { 
     maxTokens: 200000, 
     inputCost: 5.00, 
     outputCost: 20.00,
-    description: 'OpenAI – bestes Modell für komplexe Aufgaben & Kreativität'
+    description: 'ChatGPT – bestes Modell für komplexe Aufgaben & Kreativität'
   },
   'gpt-4.1': { 
     maxTokens: 128000, 
     inputCost: 3.50, 
     outputCost: 14.00,
-    description: 'OpenAI – stark bei Coding & Business-Analyse'
+    description: 'ChatGPT – stark bei Coding & Business-Analyse'
   },
   'gpt-4o': { 
     maxTokens: 128000, 
     inputCost: 2.50, 
     outputCost: 10.00,
-    description: 'OpenAI – schnell, günstig, multimodal (Text, Bild, Audio)'
+    description: 'ChatGPT – schnell, günstig, multimodal (Text, Bild, Audio)'
   },
   'gpt-4o-mini': { 
     maxTokens: 128000, 
     inputCost: 0.15, 
     outputCost: 0.60,
-    description: 'OpenAI – günstige Variante für Standard-Chats'
+    description: 'ChatGPT – günstige Variante für Standard-Chats'
   },
   'gpt-4-turbo': { 
     maxTokens: 128000, 
     inputCost: 3.00, 
     outputCost: 12.00,
-    description: 'OpenAI – performanceorientiert mit großem Kontext'
+    description: 'ChatGPT – performanceorientiert mit großem Kontext'
   },
   'gpt-3.5-turbo': { 
     maxTokens: 16000, 
     inputCost: 0.50, 
     outputCost: 1.50,
-    description: 'OpenAI – geeignet für einfache Aufgaben & Supportbots'
+    description: 'ChatGPT – geeignet für einfache Aufgaben & Supportbots'
   },
   
   // Anthropic Claude Models
@@ -80,13 +80,13 @@ const MODEL_CAPABILITIES = {
     maxTokens: 2000000, 
     inputCost: 1.25, 
     outputCost: 5.00,
-    description: 'Google – top bei multimodalem Input & Webverknüpfung'
+    description: 'Gemini – top bei multimodalem Input & Webverknüpfung'
   },
   'gemini-2.5-flash': { 
     maxTokens: 1000000, 
     inputCost: 0.075, 
     outputCost: 0.30,
-    description: 'Google – sehr schnell & leichtgewichtig, ideal für UI-Feedback'
+    description: 'Gemini – sehr schnell & leichtgewichtig, ideal für UI-Feedback'
   }
 };
 
