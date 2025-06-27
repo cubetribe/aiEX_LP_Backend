@@ -222,3 +222,7 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - **Entfernt**: Entfernte Features
 - **Behoben**: Bugfixes
 - **Sicherheit**: Sicherheits-relevante Änderungen
+
+
+
+

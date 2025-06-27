@@ -194,11 +194,11 @@ function validateProductionRequirements(env) {
 
   if (isProduction) {
     // Required for production
-    if (!env.DATABASE_SSL && !env.DATABASE_HOST.includes('localhost')) {
+    if (!env.DATABASE_SSL && env.DATABASE_HOST && !env.DATABASE_HOST.includes('localhost')) {
       warnings.push('DATABASE_SSL should be enabled for production database connections');
     }
 
-    if (!env.SSL_ENABLED && env.STRAPI_URL.startsWith('https://')) {
+    if (!env.SSL_ENABLED && env.STRAPI_URL && env.STRAPI_URL.startsWith('https://')) {
       warnings.push('SSL_ENABLED should be true when using HTTPS URLs');
     }
 
@@ -218,7 +218,7 @@ function validateProductionRequirements(env) {
       }
     });
 
-    if (env.CORS_ORIGINS.includes('localhost')) {
+    if (env.CORS_ORIGINS && env.CORS_ORIGINS.includes('localhost')) {
       warnings.push('CORS_ORIGINS contains localhost URLs in production');
     }
   }

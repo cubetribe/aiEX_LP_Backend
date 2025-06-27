@@ -1,0 +1,35 @@
+# GoAIX Backend - Fixed SWC Issue
+FROM node:20-slim
+
+# Install system dependencies for glibc (not musl)
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy and install dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy source
+COPY . .
+
+# Set environment
+ENV NODE_ENV=production
+ENV PORT=1337
+ENV HOST=0.0.0.0
+
+# Install SWC platform-specific binaries
+RUN npm install @swc/core-linux-x64-gnu
+
+# Now build Strapi admin
+RUN npm run build
+
+# Clean up dev dependencies
+RUN npm prune --production
+
+EXPOSE 1337
+CMD ["npm", "start"]

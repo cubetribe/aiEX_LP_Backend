@@ -1,40 +1,52 @@
-# GoAIX Backend - Production Dockerfile v7
-FROM node:20-alpine
+# 1. Base Image: glibc-basiert, wie von Ihnen korrekt identifiziert
+FROM node:20-slim
 
-# Install system dependencies
-RUN apk add --no-cache python3 make g++ libc6-compat vips-dev
+# Installiert System-Dependencies, die für einige npm-Pakete benötigt werden
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
 WORKDIR /app
 
-# Copy package files
+# Kopiert nur die package-Dateien, um den npm-Cache-Layer zu nutzen
 COPY package.json package-lock.json ./
 
-# Install ALL dependencies (Strapi needs dev deps for build)
+# Installiert Dependencies deterministisch
 RUN npm ci
 
-# Copy source code
+# Der entscheidende Fix von Ihnen: explizite SWC-Binary für GNU/Linux (glibc)
+RUN npm install @swc/core-linux-x64-gnu
+
+# Kopiert den Rest des App-Codes
 COPY . .
 
-# Set production environment variables
-ENV NODE_ENV=production
-ENV STRAPI_DISABLE_UPDATE_NOTIFICATION=true
-ENV STRAPI_HIDE_STARTUP_MESSAGE=true
+# --- Build Stage ---
 
-# Ensure all files have correct permissions
-RUN chmod -R 755 .
+# Definieren Sie Build-Argumente. Diese existieren NUR während des Builds.
+# Der NODE_ENV wird als ARG definiert und dann an ENV übergeben.
+ARG NODE_ENV=production
+ARG STRAPI_ADMIN_BACKEND_URL
+ARG DATABASE_URL
 
-# Build Strapi admin with increased memory limit
-RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
+# Setzen Sie die Umgebungsvariablen für den Build-Prozess.
+ENV NODE_ENV=${NODE_ENV}
+ENV STRAPI_ADMIN_BACKEND_URL=${STRAPI_ADMIN_BACKEND_URL}
+ENV DATABASE_URL=${DATABASE_URL}
 
-# Remove dev dependencies after build
-RUN npm prune --production
+# Temporär vereinfachter Build-Befehl für klares Fehler-Logging
+RUN npm run build
 
-# Create user
-RUN addgroup -g 1001 -S nodejs && adduser -S strapi -u 1001
-RUN chown -R strapi:nodejs /app
-USER strapi
+# Ensure all required Strapi directories exist
+RUN mkdir -p public public/uploads build .tmp
 
-# Start application
+# Create favicon.ico to prevent 500 errors
+RUN touch public/favicon.ico
+
+# --- Production Stage ---
+# Hier könnte man einen Multi-Stage-Build machen, aber für die Einfachheit lassen wir es erstmal so.
+
+# Setzt die Laufzeit-Umgebungsvariable.
+# Die anderen Variablen (DATABASE_URL etc.) kommen zur Laufzeit von Railway!
+ENV NODE_ENV=development
+
 EXPOSE 1337
+
 CMD ["npm", "start"]

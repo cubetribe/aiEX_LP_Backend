@@ -1,6 +1,12 @@
 # Ignore Frontend directory (separate repository)
 Frontend/
 
+# Environment variables
+.env
+
+# Railway configuration
+railway-config/
+
 # OS generated files
 .DS_Store
 .DS_Store?
