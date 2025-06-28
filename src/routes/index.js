@@ -218,7 +218,8 @@ module.exports = [
               id, 
               found: !!campaign, 
               isActive: campaign?.isActive,
-              status: campaign?.status 
+              status: campaign?.status,
+              campaignData: campaign 
             }
           };
           return;
