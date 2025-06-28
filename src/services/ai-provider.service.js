@@ -440,6 +440,76 @@ ${prompt}`;
       }
     ];
   }
+
+  /**
+   * Generate content using the specified AI provider
+   * This is the main method for production use
+   */
+  async generateContent(promptTemplate, data, options = {}) {
+    try {
+      // Process the prompt template with data
+      const processedPrompt = this.processPromptTemplate(promptTemplate, data);
+      
+      // Determine which provider to use
+      let provider = options.provider || 'openai'; // Default to OpenAI
+      const model = options.model || 'auto';
+      
+      // Check if provider is configured
+      if (!this.isConfigured[provider]) {
+        // Fallback to any available provider
+        const availableProviders = Object.keys(this.isConfigured).filter(p => this.isConfigured[p]);
+        if (availableProviders.length === 0) {
+          throw new Error('No AI providers configured');
+        }
+        strapi.log.warn(`Provider ${provider} not configured, falling back to ${availableProviders[0]}`);
+        provider = availableProviders[0];
+      }
+      
+      let result;
+      
+      // Call the appropriate provider
+      switch (provider) {
+        case 'openai':
+          result = await this.callOpenAI(processedPrompt, model);
+          break;
+        case 'anthropic':
+          result = await this.callAnthropic(processedPrompt, model);
+          break;
+        case 'gemini':
+          result = await this.callGemini(processedPrompt, model);
+          break;
+        default:
+          // If 'auto' is specified, try providers in order of preference
+          const providerOrder = ['openai', 'anthropic', 'gemini'];
+          for (const p of providerOrder) {
+            if (this.isConfigured[p]) {
+              strapi.log.info(`Auto-selecting provider: ${p}`);
+              if (p === 'openai') result = await this.callOpenAI(processedPrompt, model);
+              else if (p === 'anthropic') result = await this.callAnthropic(processedPrompt, model);
+              else if (p === 'gemini') result = await this.callGemini(processedPrompt, model);
+              break;
+            }
+          }
+      }
+      
+      if (!result) {
+        throw new Error('Failed to generate content with any provider');
+      }
+      
+      // Return in the expected format
+      return {
+        content: result.response,
+        provider: provider,
+        model: result.model,
+        cost: result.cost,
+        success: true
+      };
+      
+    } catch (error) {
+      strapi.log.error('AI content generation failed:', error);
+      throw error;
+    }
+  }
 }
 
 // Create singleton instance
