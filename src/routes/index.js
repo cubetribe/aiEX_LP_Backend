@@ -21,13 +21,6 @@ module.exports = [
         }
 
         const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
-          filters: {
-            isActive: true,
-            $or: [
-              { status: 'active' },
-              { status: null }
-            ]
-          },
           fields: ['title', 'slug', 'description', 'campaignType', 'isActive', 'status'],
           sort: 'createdAt:desc'
         });
@@ -65,8 +58,7 @@ module.exports = [
 
         const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
           filters: {
-            slug,
-            isActive: true
+            slug
           },
           fields: ['title', 'slug', 'description', 'campaignType', 'status', 'isActive', 'config', 'jsonCode', 'previewUrl', 'aiPromptTemplate', 'resultDeliveryMode', 'showResultImmediately', 'requireEmailForResult', 'resultDisplayConfig']
         });
