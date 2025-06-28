@@ -1292,4 +1292,91 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
       auth: false,
     },
   },
+  {
+    method: 'POST',
+    path: '/leads/:id/reprocess',
+    handler: async (ctx) => {
+      const { id } = ctx.params;
+      const { sendEmail = false } = ctx.request.body;
+
+      try {
+        // Set CORS headers
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          ctx.set('Access-Control-Allow-Origin', origin);
+          ctx.set('Access-Control-Allow-Credentials', 'true');
+          ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+
+        // Get lead with campaign
+        const lead = await strapi.entityService.findOne('api::lead.lead', id, {
+          populate: ['campaign']
+        });
+
+        if (!lead) {
+          ctx.status = 404;
+          ctx.body = { error: 'Lead not found' };
+          return;
+        }
+
+        strapi.log.info(`🔄 Reprocessing lead ${id} (email: ${sendEmail})`);
+
+        // Update processing status
+        await strapi.entityService.update('api::lead.lead', id, {
+          data: { aiProcessingStatus: 'processing' }
+        });
+
+        // Generate AI result
+        const leadService = strapi.service('api::lead.lead');
+        const aiResult = await leadService.generateAIResult(lead, lead.campaign);
+
+        // Update lead with result
+        const updatedLead = await strapi.entityService.update('api::lead.lead', id, {
+          data: {
+            aiResult,
+            aiProcessingStatus: 'completed'
+          }
+        });
+
+        let emailResult = null;
+        
+        // Send email if requested
+        if (sendEmail && lead.email) {
+          emailResult = await leadService.sendResultEmail(lead, lead.campaign, aiResult);
+        }
+
+        strapi.log.info(`✅ Lead ${id} reprocessed successfully`);
+
+        ctx.body = {
+          success: true,
+          data: {
+            id: updatedLead.id,
+            aiResult,
+            aiProcessingStatus: 'completed',
+            emailSent: emailResult?.success || false,
+            emailStatus: emailResult?.success ? 'sent' : (emailResult?.skipReason || 'not_sent')
+          }
+        };
+
+      } catch (error) {
+        strapi.log.error('Error reprocessing lead:', error);
+        
+        // Update status to failed
+        await strapi.entityService.update('api::lead.lead', id, {
+          data: { aiProcessingStatus: 'failed' }
+        });
+
+        ctx.status = 500;
+        ctx.body = { 
+          success: false,
+          error: 'Failed to reprocess lead',
+          details: error.message 
+        };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
 ];

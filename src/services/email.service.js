@@ -183,7 +183,7 @@ class EmailService {
     const textBody = htmlBody.replace(/<[^>]*>/g, '').replace(/\n\s*\n/g, '\n\n');
 
     return {
-      from: process.env.EMAIL_FROM || process.env.SMTP_USER || 'noreply@goaiex.com',
+      from: process.env.SMTP_USERNAME || process.env.EMAIL_FROM || 'mail@goaiex.com',
       to: lead.email,
       subject: subject,
       text: textBody,
