@@ -32,21 +32,20 @@ class EmailService {
         return;
       }
 
-      // Create transporter based on provider
-      this.transporter = await this.createTransporter(emailConfig);
-      
-      // Mark as configured if transporter exists - skip verification
-      if (this.transporter) {
-        this.isConfigured = true;
-        strapi.log.info(`⚡ Email service configured with ${emailConfig.provider} (verification skipped)`);
-        
-        // Optional verification attempt (non-blocking)
+      // Force configuration if environment variables are present
+      if (emailConfig.provider === 'smtp' && emailConfig.host && emailConfig.auth?.user && emailConfig.auth?.pass) {
         try {
-          await this.transporter.verify();
-          strapi.log.info(`✅ Email verification successful`);
-        } catch (verifyError) {
-          strapi.log.warn('⚠️ Email verification failed (non-critical):', verifyError.message);
+          // Create transporter
+          this.transporter = await this.createTransporter(emailConfig);
+          this.isConfigured = true;
+          strapi.log.info(`🚀 Email service FORCE CONFIGURED with ${emailConfig.provider}`);
+        } catch (transporterError) {
+          strapi.log.error('❌ Transporter creation failed:', transporterError);
+          this.isConfigured = false;
         }
+      } else {
+        strapi.log.error('❌ Missing required email configuration');
+        this.isConfigured = false;
       }
     } catch (error) {
       strapi.log.error('❌ Email service initialization failed:', error);
