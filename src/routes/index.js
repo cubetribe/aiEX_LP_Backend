@@ -1071,4 +1071,70 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
       auth: false,
     },
   },
+  {
+    method: 'POST',
+    path: '/debug/complete-lead-10',
+    handler: async (ctx) => {
+      try {
+        const testAiResult = `Hallo!
+
+Basierend auf Ihren Antworten sehe ich großes Potenzial für KI in Ihrem Bereich.
+
+🎯 **Ihre Einschätzung:**
+Sie zeigen eine hohe Bereitschaft für KI-Integration mit einem Lead-Score von 100/100 (hot Lead).
+
+💡 **AI-Potenzial für Sie:**
+• Automatisierung von Routineaufgaben
+• Datenanalyse und Insights  
+• Kundenservice-Verbesserung
+• Produktivitätssteigerung
+
+📋 **Konkrete nächste Schritte:**
+1. Starten Sie mit ChatGPT für erste Erfahrungen
+2. Testen Sie Notion AI für Produktivität
+3. Evaluieren Sie branchenspezifische AI-Tools
+
+🚀 **Empfehlungen:**
+- Beginnen Sie mit kleinen Projekten
+- Schulen Sie Ihr Team schrittweise  
+- Achten Sie auf Datenschutz-Compliance
+
+Viel Erfolg auf Ihrer KI-Reise!`;
+
+        // Update Lead 10 to completed status
+        const updatedLead = await strapi.entityService.update('api::lead.lead', 10, {
+          data: {
+            aiProcessingStatus: 'completed',
+            processingProgress: 100,
+            currentProcessingStep: 'Processing completed',
+            aiResult: testAiResult
+          }
+        });
+
+        // Log the completion
+        const debugLogger = require('../services/debug-logger.service');
+        await debugLogger.logLead('MANUAL_COMPLETION', 10, {
+          completed: true,
+          hasAiResult: true
+        }, 'SUCCESS', null, ctx);
+
+        ctx.body = {
+          success: true,
+          message: 'Lead 10 completed successfully',
+          data: {
+            leadId: updatedLead.id,
+            status: updatedLead.aiProcessingStatus,
+            hasResult: !!updatedLead.aiResult
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error completing lead 10:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to complete lead 10' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
 ];
