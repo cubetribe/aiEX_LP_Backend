@@ -71,18 +71,27 @@ module.exports = {
     
     // VALIDATE CONFIG JSON ON UPDATE
     if (data.config) {
-      const validation = validateCampaignConfig(data.config, campaignType);
-      
-      if (!validation.success) {
-        const errorMessages = validation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
-        const error = new Error(`Campaign configuration validation failed: ${errorMessages}`);
-        error.details = validation.errors;
-        throw error;
+      // Skip validation if config is empty or if we're just updating other fields
+      if (Object.keys(data.config).length > 0) {
+        // Merge with existing config to ensure we have all required fields
+        const mergedConfig = {
+          ...(existingCampaign.config || {}),
+          ...data.config
+        };
+        
+        const validation = validateCampaignConfig(mergedConfig, campaignType);
+        
+        if (!validation.success) {
+          const errorMessages = validation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
+          const error = new Error(`Campaign configuration validation failed: ${errorMessages}`);
+          error.details = validation.errors;
+          throw error;
+        }
+        
+        // Use validated config
+        data.config = validation.data;
+        strapi.log.info(`✅ Campaign config validated for update: ${campaignType}`);
       }
-      
-      // Use validated config
-      data.config = validation.data;
-      strapi.log.info(`✅ Campaign config validated for update: ${campaignType}`);
     }
     
     // VALIDATE RESULT DISPLAY CONFIG ON UPDATE

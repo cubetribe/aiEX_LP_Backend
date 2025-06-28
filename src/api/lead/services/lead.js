@@ -594,7 +594,7 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
         aiContext,
         {
           provider: campaignData.aiProvider || 'auto',
-          model: campaignData.aiModel || 'gpt-4o',
+          model: campaignData.aiModel && campaignData.aiModel !== 'claude-opus-3.7' ? campaignData.aiModel : 'gpt-4o',
           temperature: campaignData.aiTemperature || 0.7,
           maxTokens: campaignData.aiMaxTokens || 1000
         }
