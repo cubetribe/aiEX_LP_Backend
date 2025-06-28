@@ -561,8 +561,12 @@ Erstelle eine professionelle Empfehlung mit:
         
         const data = await response.json();
         
-        if (data.success) {
+        console.log('API Response:', data); // Debug log
+        
+        if (data.success && data.data) {
           displayResults(data.data);
+        } else if (data.results) {
+          displayResults(data);
         } else {
           resultsDiv.innerHTML = `
             <div class="result-item" style="border-color: #ef4444;">
@@ -586,35 +590,76 @@ Erstelle eine professionelle Empfehlung mit:
     function displayResults(results) {
       const resultsDiv = document.getElementById('results');
       
-      const resultsHtml = Object.entries(results).map(([provider, result]) => {
-        if (result.error) {
+      // Handle different response formats
+      let resultsHtml = '';
+      
+      if (results.results) {
+        // New format with multiple provider results
+        resultsHtml = Object.entries(results.results).map(([provider, result]) => {
+          if (result.error) {
+            return `
+              <div class="result-item" style="border-color: #ef4444;">
+                <div class="result-header">
+                  <div class="result-provider">${provider.charAt(0).toUpperCase() + provider.slice(1)}</div>
+                  <div style="color: #ef4444;">❌ Error</div>
+                </div>
+                <p style="color: #666;">${result.error}</p>
+              </div>
+            `;
+          }
+          
           return `
-            <div class="result-item" style="border-color: #ef4444;">
+            <div class="result-item">
               <div class="result-header">
                 <div class="result-provider">${provider.charAt(0).toUpperCase() + provider.slice(1)}</div>
-                <div style="color: #ef4444;">❌ Error</div>
+                <div class="result-metrics">
+                  <span>⏱ ${result.metrics?.duration || result.duration || 'N/A'}</span>
+                  <span>📝 ${result.metrics?.wordCount || result.wordCount || 'N/A'} words</span>
+                  ${result.metrics?.cost || result.cost ? `<span>💰 ${result.metrics?.cost || result.cost}</span>` : ''}
+                </div>
               </div>
-              <p style="color: #666;">${result.error}</p>
+              <div class="result-content">${result.response || result.content || 'No response'}</div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        // Old format or single result
+        Object.entries(results).forEach(([key, value]) => {
+          if (typeof value === 'object' && value.response) {
+            resultsHtml += `
+              <div class="result-item">
+                <div class="result-header">
+                  <div class="result-provider">${key.charAt(0).toUpperCase() + key.slice(1)}</div>
+                  <div class="result-metrics">
+                    <span>⏱ ${value.metrics?.duration || value.duration || 'N/A'}</span>
+                    <span>📝 ${value.metrics?.wordCount || value.wordCount || 'N/A'} words</span>
+                    ${value.metrics?.cost || value.cost ? `<span>💰 ${value.metrics?.cost || value.cost}</span>` : ''}
+                  </div>
+                </div>
+                <div class="result-content">${value.response || value.content || 'No response'}</div>
+              </div>
+            `;
+          }
+        });
+        
+        // If no results formatted yet, show raw response
+        if (!resultsHtml && results.response) {
+          resultsHtml = `
+            <div class="result-item">
+              <div class="result-header">
+                <div class="result-provider">Result</div>
+                <div class="result-metrics">
+                  <span>⏱ ${results.duration || 'N/A'}</span>
+                  <span>📝 ${results.wordCount || 'N/A'} words</span>
+                </div>
+              </div>
+              <div class="result-content">${results.response || 'No response'}</div>
             </div>
           `;
         }
-        
-        return `
-          <div class="result-item">
-            <div class="result-header">
-              <div class="result-provider">${provider.charAt(0).toUpperCase() + provider.slice(1)}</div>
-              <div class="result-metrics">
-                <span>⏱ ${result.duration}</span>
-                <span>📝 ${result.wordCount} words</span>
-                ${result.cost ? `<span>💰 ${result.cost}</span>` : ''}
-              </div>
-            </div>
-            <div class="result-content">${result.response}</div>
-          </div>
-        `;
-      }).join('');
+      }
       
-      resultsDiv.innerHTML = resultsHtml;
+      resultsDiv.innerHTML = resultsHtml || '<p>No results to display</p>';
     }
     
     // Initialize on load
