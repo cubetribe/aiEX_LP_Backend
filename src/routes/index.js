@@ -28,7 +28,7 @@ module.exports = [
               { status: null }
             ]
           },
-          fields: ['title', 'slug', 'description', 'campaignType'],
+          fields: ['title', 'slug', 'description', 'campaignType', 'isActive', 'status'],
           sort: 'createdAt:desc'
         });
 
