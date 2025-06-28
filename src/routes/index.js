@@ -1229,12 +1229,7 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
 
         const emailService = require('../services/email.service');
         
-        const result = await emailService.sendEmail({
-          to,
-          subject,
-          text: content,
-          html: `<p>${content}</p>`
-        });
+        const result = await emailService.sendTestEmail(to, subject, content);
 
         ctx.body = {
           success: true,
