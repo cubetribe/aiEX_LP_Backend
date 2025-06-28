@@ -83,10 +83,16 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
       strapi.log.info(`Lead created: ${lead.email} (Score: ${leadScore}, Quality: ${leadQuality})`);
       
       // Queue-based result delivery if queue service is available
-      if (strapi.queueService && strapi.queueService.isInitialized) {
-        await this.handleQueuedResultDelivery(lead, campaignData);
+      if (strapi.queueService) {
+        try {
+          await this.handleQueuedResultDelivery(lead, campaignData);
+        } catch (queueError) {
+          strapi.log.warn('Queue processing failed, falling back to immediate processing:', queueError);
+          await this.handleResultDelivery(lead, campaignData);
+        }
       } else {
         // Fallback to immediate processing
+        strapi.log.info('No queue service available, using immediate processing');
         await this.handleResultDelivery(lead, campaignData);
       }
       
@@ -113,7 +119,7 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
           leadId: lead.id,
           campaignId: campaignData.id
         }, {
-          priority: leadQuality === 'hot' ? 'high' : 'normal'
+          priority: lead.leadQuality === 'hot' ? 'high' : 'normal'
         });
       }
 

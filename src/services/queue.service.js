@@ -26,7 +26,7 @@ class QueueService {
   }
 
   /**
-   * Initialize Queue service with Redis connection
+   * Initialize Queue service with Redis connection and fallback
    */
   async initialize() {
     try {
@@ -35,17 +35,23 @@ class QueueService {
       // Setup Redis configuration
       this.setupRedisConfig();
 
-      // Test Redis connection
-      await this.testRedisConnection();
+      // Test Redis connection (with fallback)
+      const redisConnected = await this.testRedisConnection();
+      
+      if (redisConnected) {
+        this.strapi.log.info('🔴 Redis connected - using Redis queues');
+      } else {
+        this.strapi.log.info('💾 Redis unavailable - using in-memory queues');
+      }
 
-      // Create queues
+      // Create queues (Redis or in-memory based on connection)
       this.createQueues();
 
       // Setup queue processors
       this.setupProcessors();
 
-      // Setup Bull Board dashboard (development only)
-      if (process.env.NODE_ENV === 'development' || process.env.QUEUE_DASHBOARD_ENABLED === 'true') {
+      // Setup Bull Board dashboard (development only, Redis only)
+      if (this.useRedis && (process.env.NODE_ENV === 'development' || process.env.QUEUE_DASHBOARD_ENABLED === 'true')) {
         this.setupBullBoard();
       }
 
@@ -53,11 +59,16 @@ class QueueService {
       this.setupEventListeners();
 
       this.isInitialized = true;
-      this.strapi.log.info('✅ Queue service initialized successfully');
+      const queueType = this.useRedis ? 'Redis' : 'in-memory';
+      this.strapi.log.info(`✅ Queue service initialized successfully with ${queueType} queues`);
 
     } catch (error) {
       this.strapi.log.error('❌ Failed to initialize Queue service:', error);
-      throw new Error(`Queue service initialization failed: ${error.message}`);
+      
+      // Even if initialization fails, mark as initialized with limited functionality
+      this.isInitialized = true;
+      this.useRedis = false;
+      this.strapi.log.warn('⚠️ Queue service initialized with limited functionality (immediate processing only)');
     }
   }
 
@@ -81,7 +92,7 @@ class QueueService {
   }
 
   /**
-   * Test Redis connection
+   * Test Redis connection with fallback
    */
   async testRedisConnection() {
     const testRedis = new Redis(this.redisConfig);
@@ -89,15 +100,20 @@ class QueueService {
     try {
       await testRedis.ping();
       this.strapi.log.info('✅ Redis connection test successful');
+      this.useRedis = true;
+      return true;
     } catch (error) {
-      throw new Error(`Redis connection failed: ${error.message}`);
+      this.strapi.log.warn(`⚠️ Redis connection failed: ${error.message}`);
+      this.strapi.log.info('🔄 Falling back to in-memory queue processing');
+      this.useRedis = false;
+      return false;
     } finally {
       testRedis.disconnect();
     }
   }
 
   /**
-   * Create all queues
+   * Create all queues with Redis fallback
    */
   createQueues() {
     const queueConfigs = [
@@ -160,14 +176,145 @@ class QueueService {
     ];
 
     queueConfigs.forEach(config => {
-      const queue = new Queue(config.name, {
-        redis: this.redisConfig,
-        ...config.options,
-      });
+      let queue;
+      
+      if (this.useRedis) {
+        // Create Bull queue with Redis
+        queue = new Queue(config.name, {
+          redis: this.redisConfig,
+          ...config.options,
+        });
+        this.strapi.log.info(`📋 Created Redis queue: ${config.name}`);
+      } else {
+        // Create in-memory queue fallback
+        queue = this.createInMemoryQueue(config.name, config.options);
+        this.strapi.log.info(`📋 Created in-memory queue: ${config.name}`);
+      }
 
       this.queues.set(config.name, queue);
-      this.strapi.log.info(`📋 Created queue: ${config.name}`);
     });
+  }
+
+  /**
+   * Create in-memory queue fallback when Redis is unavailable
+   */
+  createInMemoryQueue(name, options) {
+    // Simple in-memory queue implementation
+    const inMemoryQueue = {
+      name,
+      jobs: new Map(),
+      jobId: 1,
+      processors: new Map(),
+      isInMemory: true,
+
+      async add(jobType, data, jobOptions = {}) {
+        const job = {
+          id: this.jobId++,
+          type: jobType,
+          data,
+          options: jobOptions,
+          status: 'waiting',
+          createdAt: new Date(),
+          attempts: 0,
+          maxAttempts: jobOptions.attempts || options.defaultJobOptions?.attempts || 3
+        };
+
+        this.jobs.set(job.id, job);
+        
+        // Process immediately in next tick
+        setImmediate(() => this.processJob(job));
+        
+        return job;
+      },
+
+      process(jobType, concurrency, processor) {
+        this.processors.set(jobType, processor);
+      },
+
+      async processJob(job) {
+        try {
+          job.status = 'active';
+          const processor = this.processors.get(job.type);
+          
+          if (processor) {
+            const result = await processor(job);
+            job.status = 'completed';
+            job.result = result;
+            this.strapi.log.info(`✅ In-memory job completed: ${name}:${job.id}`);
+          } else {
+            throw new Error(`No processor found for job type: ${job.type}`);
+          }
+        } catch (error) {
+          job.attempts++;
+          job.error = error.message;
+          
+          if (job.attempts >= job.maxAttempts) {
+            job.status = 'failed';
+            this.strapi.log.error(`❌ In-memory job failed: ${name}:${job.id} - ${error.message}`);
+          } else {
+            job.status = 'waiting';
+            // Retry after delay
+            const delay = Math.pow(2, job.attempts) * 1000; // Exponential backoff
+            setTimeout(() => this.processJob(job), delay);
+            this.strapi.log.warn(`⚠️ Retrying in-memory job: ${name}:${job.id} (attempt ${job.attempts})`);
+          }
+        }
+      },
+
+      async getWaiting() {
+        return Array.from(this.jobs.values()).filter(job => job.status === 'waiting');
+      },
+
+      async getActive() {
+        return Array.from(this.jobs.values()).filter(job => job.status === 'active');
+      },
+
+      async getCompleted() {
+        return Array.from(this.jobs.values()).filter(job => job.status === 'completed');
+      },
+
+      async getFailed() {
+        return Array.from(this.jobs.values()).filter(job => job.status === 'failed');
+      },
+
+      async getDelayed() {
+        return []; // In-memory queue doesn't support delayed jobs
+      },
+
+      async pause() {
+        this.paused = true;
+      },
+
+      async resume() {
+        this.paused = false;
+      },
+
+      async close() {
+        this.jobs.clear();
+        this.processors.clear();
+      },
+
+      async clean(grace, type) {
+        const now = Date.now();
+        const removed = [];
+        
+        this.jobs.forEach((job, id) => {
+          if (job.status === type && (now - job.createdAt.getTime()) > grace) {
+            this.jobs.delete(id);
+            removed.push(job);
+          }
+        });
+        
+        return removed;
+      },
+
+      // Event emitters (simplified)
+      on(event, callback) {
+        // Simplified event handling for in-memory queue
+      }
+    };
+
+    return inMemoryQueue;
   }
 
   /**
@@ -252,7 +399,7 @@ class QueueService {
   }
 
   /**
-   * Add AI processing job
+   * Add AI processing job with fallback support
    * @param {Object} data - Job data
    * @param {Object} options - Job options
    * @returns {Object} Job instance
@@ -268,22 +415,37 @@ class QueueService {
         attempts: options.attempts || 3,
       };
 
-      const job = await this.queues.get('ai-processing').add('process-lead', data, {
+      const queue = this.queues.get('ai-processing');
+      if (!queue) {
+        throw new Error('AI processing queue not found');
+      }
+
+      const job = await queue.add('process-lead', data, {
         ...defaultOptions,
         ...options,
       });
 
-      this.strapi.log.info(`📤 AI processing job queued: ${job.id} for lead: ${data.leadId}`);
+      const queueType = this.useRedis ? 'Redis' : 'in-memory';
+      this.strapi.log.info(`📤 AI processing job queued (${queueType}): ${job.id} for lead: ${data.leadId}`);
       return job;
 
     } catch (error) {
       this.strapi.log.error('❌ Failed to queue AI processing job:', error);
-      throw error;
+      
+      // Fallback to immediate processing if queue fails
+      try {
+        this.strapi.log.warn('🔄 Falling back to immediate AI processing');
+        const result = await this.processAIJob({ data });
+        return { id: 'immediate', result, immediate: true };
+      } catch (fallbackError) {
+        this.strapi.log.error('❌ Immediate processing also failed:', fallbackError);
+        throw error;
+      }
     }
   }
 
   /**
-   * Add Google Sheets export job
+   * Add Google Sheets export job with fallback support
    * @param {Object} data - Job data
    * @param {Object} options - Job options
    * @returns {Object} Job instance
@@ -298,22 +460,38 @@ class QueueService {
         attempts: 5,
       };
 
-      const job = await this.queues.get('sheets-export').add('export-lead', data, {
+      const queue = this.queues.get('sheets-export');
+      if (!queue) {
+        throw new Error('Sheets export queue not found');
+      }
+
+      const job = await queue.add('export-lead', data, {
         ...defaultOptions,
         ...options,
       });
 
-      this.strapi.log.info(`📊 Sheets export job queued: ${job.id} for lead: ${data.leadId}`);
+      const queueType = this.useRedis ? 'Redis' : 'in-memory';
+      this.strapi.log.info(`📊 Sheets export job queued (${queueType}): ${job.id} for lead: ${data.leadId}`);
       return job;
 
     } catch (error) {
       this.strapi.log.error('❌ Failed to queue sheets export job:', error);
-      throw error;
+      
+      // Fallback to immediate processing if queue fails
+      try {
+        this.strapi.log.warn('🔄 Falling back to immediate sheets export');
+        const result = await this.processSheetsExportJob({ data });
+        return { id: 'immediate', result, immediate: true };
+      } catch (fallbackError) {
+        this.strapi.log.error('❌ Immediate sheets export also failed:', fallbackError);
+        // Don't throw error for sheets export - it's not critical
+        return { id: 'failed', error: fallbackError.message };
+      }
     }
   }
 
   /**
-   * Add email sending job
+   * Add email sending job with fallback support
    * @param {Object} data - Job data
    * @param {Object} options - Job options
    * @returns {Object} Job instance
@@ -328,17 +506,33 @@ class QueueService {
         attempts: 3,
       };
 
-      const job = await this.queues.get('email-sending').add('send-email', data, {
+      const queue = this.queues.get('email-sending');
+      if (!queue) {
+        throw new Error('Email sending queue not found');
+      }
+
+      const job = await queue.add('send-email', data, {
         ...defaultOptions,
         ...options,
       });
 
-      this.strapi.log.info(`📧 Email job queued: ${job.id} for lead: ${data.leadId}`);
+      const queueType = this.useRedis ? 'Redis' : 'in-memory';
+      this.strapi.log.info(`📧 Email job queued (${queueType}): ${job.id} for lead: ${data.leadId}`);
       return job;
 
     } catch (error) {
       this.strapi.log.error('❌ Failed to queue email job:', error);
-      throw error;
+      
+      // Fallback to immediate processing if queue fails
+      try {
+        this.strapi.log.warn('🔄 Falling back to immediate email sending');
+        const result = await this.processEmailJob({ data });
+        return { id: 'immediate', result, immediate: true };
+      } catch (fallbackError) {
+        this.strapi.log.error('❌ Immediate email sending also failed:', fallbackError);
+        // Don't throw error for email - it's not critical
+        return { id: 'failed', error: fallbackError.message };
+      }
     }
   }
 
@@ -729,6 +923,23 @@ class QueueService {
     if (!this.isInitialized) {
       throw new Error('Queue service is not initialized. Call initialize() first.');
     }
+  }
+
+  /**
+   * Get service status and configuration
+   */
+  getServiceStatus() {
+    return {
+      isInitialized: this.isInitialized,
+      useRedis: this.useRedis,
+      queueCount: this.queues.size,
+      queues: Array.from(this.queues.keys()),
+      redisConfig: {
+        host: this.redisConfig?.host,
+        port: this.redisConfig?.port,
+        db: this.redisConfig?.db
+      }
+    };
   }
 }
 

@@ -1418,22 +1418,33 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
     path: '/queues/status',
     handler: async (ctx) => {
       try {
-        if (!strapi.queueService || !strapi.queueService.isInitialized) {
+        if (!strapi.queueService) {
           ctx.body = {
             success: false,
-            message: 'Queue service not initialized',
-            data: { enabled: false }
+            message: 'Queue service not available',
+            data: { enabled: false, available: false }
           };
           return;
         }
 
-        const stats = await strapi.queueService.getAllQueueStats();
+        const serviceStatus = strapi.queueService.getServiceStatus();
+        let stats = {};
+
+        try {
+          if (serviceStatus.isInitialized && serviceStatus.queueCount > 0) {
+            stats = await strapi.queueService.getAllQueueStats();
+          }
+        } catch (statsError) {
+          strapi.log.warn('Could not get queue stats:', statsError.message);
+          stats = { error: 'Stats unavailable' };
+        }
         
         ctx.body = {
           success: true,
           data: {
             enabled: true,
-            initialized: strapi.queueService.isInitialized,
+            available: true,
+            ...serviceStatus,
             stats
           }
         };
@@ -1459,9 +1470,15 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
       const { queueName } = ctx.params;
 
       try {
-        if (!strapi.queueService || !strapi.queueService.isInitialized) {
+        if (!strapi.queueService) {
           ctx.status = 503;
           ctx.body = { error: 'Queue service not available' };
+          return;
+        }
+
+        if (!strapi.queueService.isInitialized) {
+          ctx.status = 503;
+          ctx.body = { error: 'Queue service not initialized' };
           return;
         }
 
@@ -1493,9 +1510,15 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
       const { queueName } = ctx.params;
 
       try {
-        if (!strapi.queueService || !strapi.queueService.isInitialized) {
+        if (!strapi.queueService) {
           ctx.status = 503;
           ctx.body = { error: 'Queue service not available' };
+          return;
+        }
+
+        if (!strapi.queueService.isInitialized) {
+          ctx.status = 503;
+          ctx.body = { error: 'Queue service not initialized' };
           return;
         }
 
@@ -1514,6 +1537,64 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
           error: 'Failed to resume queue',
           details: error.message 
         };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'GET',
+    path: '/debug/queue-status',
+    handler: async (ctx) => {
+      try {
+        // Set CORS headers
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          ctx.set('Access-Control-Allow-Origin', origin);
+          ctx.set('Access-Control-Allow-Credentials', 'true');
+          ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+
+        // Queue service debug info
+        const queueDebug = {
+          available: !!strapi.queueService,
+          initialized: strapi.queueService?.isInitialized || false,
+          serviceStatus: strapi.queueService?.getServiceStatus() || null
+        };
+
+        // Environment debug
+        const envDebug = {
+          QUEUE_REDIS_HOST: process.env.QUEUE_REDIS_HOST || process.env.REDIS_HOST || 'NOT_SET',
+          QUEUE_REDIS_PORT: process.env.QUEUE_REDIS_PORT || process.env.REDIS_PORT || 'NOT_SET',
+          QUEUE_REDIS_PASSWORD: process.env.QUEUE_REDIS_PASSWORD || process.env.REDIS_PASSWORD ? 'SET' : 'NOT_SET',
+          NODE_ENV: process.env.NODE_ENV || 'NOT_SET'
+        };
+
+        // Test Redis connection if service is available
+        let redisTest = null;
+        if (strapi.queueService) {
+          try {
+            redisTest = await strapi.queueService.testRedisConnection();
+          } catch (error) {
+            redisTest = { error: error.message };
+          }
+        }
+
+        ctx.body = {
+          success: true,
+          data: {
+            queue: queueDebug,
+            environment: envDebug,
+            redis: redisTest,
+            timestamp: new Date().toISOString()
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error getting debug queue status:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to get debug queue status' };
       }
     },
     config: {
