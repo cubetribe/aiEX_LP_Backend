@@ -35,16 +35,38 @@ class EmailService {
       // Force configuration if environment variables are present
       if (emailConfig.provider === 'smtp' && emailConfig.host && emailConfig.auth?.user && emailConfig.auth?.pass) {
         try {
-          // Create transporter
-          this.transporter = await this.createTransporter(emailConfig);
+          // Create transporter with direct nodemailer config
+          const transporterConfig = {
+            host: emailConfig.host,
+            port: emailConfig.port,
+            secure: emailConfig.secure,
+            auth: {
+              user: emailConfig.auth.user,
+              pass: emailConfig.auth.pass
+            }
+          };
+          
+          strapi.log.info('🔧 Creating direct transporter:', {
+            host: transporterConfig.host,
+            port: transporterConfig.port,
+            secure: transporterConfig.secure,
+            user: transporterConfig.auth.user ? 'SET' : 'MISSING'
+          });
+          
+          this.transporter = nodemailer.createTransporter(transporterConfig);
           this.isConfigured = true;
-          strapi.log.info(`🚀 Email service FORCE CONFIGURED with ${emailConfig.provider}`);
+          strapi.log.info(`🚀 Email service DIRECT CONFIGURED with ${emailConfig.provider}`);
         } catch (transporterError) {
-          strapi.log.error('❌ Transporter creation failed:', transporterError);
+          strapi.log.error('❌ Direct transporter creation failed:', transporterError);
           this.isConfigured = false;
         }
       } else {
-        strapi.log.error('❌ Missing required email configuration');
+        strapi.log.error('❌ Missing required email configuration:', {
+          provider: emailConfig.provider,
+          host: !!emailConfig.host,
+          user: !!emailConfig.auth?.user,
+          pass: !!emailConfig.auth?.pass
+        });
         this.isConfigured = false;
       }
     } catch (error) {
