@@ -19,6 +19,14 @@ class EmailService {
       // Check environment configuration
       const emailConfig = this.getEmailConfig();
       
+      strapi.log.info('🔍 Email Config Debug:', {
+        provider: emailConfig.provider,
+        host: emailConfig.host,
+        port: emailConfig.port,
+        user: emailConfig.auth?.user ? '***' + emailConfig.auth.user.slice(-3) : 'MISSING',
+        pass: emailConfig.auth?.pass ? '***' + emailConfig.auth.pass.slice(-3) : 'MISSING'
+      });
+      
       if (!emailConfig.provider || emailConfig.provider === 'none') {
         strapi.log.info('Email service disabled - no provider configured');
         return;
