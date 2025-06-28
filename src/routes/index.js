@@ -585,12 +585,15 @@ module.exports = [
         // Return result data in FormattedResult format
         ctx.body = {
           data: {
+            id: lead.id,
             leadId: lead.id,
+            firstName: lead.firstName,
+            email: lead.email,
+            responses: lead.responses,
             leadScore: lead.leadScore,
             leadQuality: lead.leadQuality,
             aiResult: formattedResult,
             aiProcessingStatus: lead.aiProcessingStatus,
-            firstName: lead.firstName,
             campaign: {
               title: campaign?.title,
               resultDisplayConfig: resultConfig
