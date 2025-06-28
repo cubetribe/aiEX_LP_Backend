@@ -537,7 +537,22 @@ module.exports = [
         }
 
         const lead = await strapi.entityService.findOne('api::lead.lead', id, {
-          populate: ['campaign']
+          populate: ['campaign'],
+          fields: ['id', 'firstName', 'email', 'responses', 'leadScore', 'leadQuality', 'aiResult', 'aiProcessingStatus']
+        });
+
+        // DEBUG: Log what we actually get from database
+        strapi.log.info('🔍 Database Lead Debug:', {
+          leadId: id,
+          foundLead: !!lead,
+          leadData: lead ? {
+            id: lead.id,
+            firstName: lead.firstName,
+            email: lead.email,
+            responses: lead.responses,
+            responsesType: typeof lead.responses,
+            responsesKeys: lead.responses ? Object.keys(lead.responses) : []
+          } : null
         });
 
         if (!lead) {
