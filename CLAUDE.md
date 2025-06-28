@@ -213,8 +213,19 @@ Key environment variables (see .env.example):
 
 ## Deployment Notes
 
-- **Production URL**: Railway - https://web-production-6df54.up.railway.app
-- **Frontend URL**: Vercel - https://aiex-quiz-platform-519nmqcf0-cubetribes-projects.vercel.app
+### ⚠️ KRITISCH: Frontend Deployment Methode
+- **Frontend wird über VERCEL CLI deployed, NICHT über GitHub!**
+- **GitHub Repository wird NICHT für automatische Deployments verwendet**
+- **Deployment Command**: `vercel --prod --force` (im Frontend-Deploy Ordner)
+
+### Production URLs
+- **Backend (Railway)**: https://web-production-6df54.up.railway.app
+- **Frontend (Vercel)**: https://aiex-quiz-platform-[hash]-cubetribes-projects.vercel.app
+- **Latest Deployment**: https://aiex-quiz-platform-fmsq1hijz-cubetribes-projects.vercel.app
+
+### Deployment Details
+- **Backend**: Automatisch via GitHub → Railway
+- **Frontend**: Manuell via Vercel CLI aus `/Frontend-Deploy` Ordner
 - **CORS**: Configured for .vercel.app and goaiex.com domains
 - **SSL**: Required for production (webhook/API integrations)
 - **Environment**: All environment variables configured in Railway
@@ -410,4 +421,36 @@ GoAIX AI-Lead-Magnet Platform - Projekt Status (28.06.2025)
 Das GoAIX System ist jetzt ein vollständiges, produktionsreifes AI-Lead-Magnet-System ohne Mock-Data mit funktionalem Email-Versand!
 
 ---
-Stand: 28.06.2025 02:30 CET - PHASE 2 ERFOLGREICH ABGESCHLOSSEN! 🎉📧✅
+Stand: 28.06.2025 23:00 CET - PHASE 3 ERFOLGREICH ABGESCHLOSSEN! 🎉🚀✅
+
+---
+🚀 PHASE 3 - KRITISCHE DEPLOYMENT-ERKENNTNIS:
+
+**PROBLEM IDENTIFIZIERT UND GELÖST:**
+- ❌ Frontend wurde 6+ Stunden lang NICHT aktualisiert
+- ❌ GitHub Repository war NICHT mit Vercel verbunden
+- ✅ Frontend muss über VERCEL CLI deployed werden!
+- ✅ Command: `vercel --prod --force` im Frontend-Deploy Ordner
+
+**AKTUELLE FIXES (28.06.2025 23:00):**
+1. Backend TypeError behoben:
+   - generateContent() Methode zu AI Provider Service hinzugefügt
+   - AI Processing funktioniert vollständig
+   - Test Lead IDs: 52, 53, 54, 55 erfolgreich verarbeitet
+
+2. Frontend korrekt deployed:
+   - Version 2.0 mit eindeutigen Markierungen
+   - Browser-Titel zeigt: [v2.0 MANUAL DEPLOY 2025-06-28]
+   - Console zeigt Deployment-Verifikation
+   - API URL korrekt: https://web-production-6df54.up.railway.app
+
+**DEPLOYMENT WORKFLOW:**
+- Backend: GitHub → Railway (automatisch)
+- Frontend: Vercel CLI → Vercel (manuell)
+- NICHT: GitHub → Vercel
+
+**VERIFIZIERTE URLS:**
+- Backend: https://web-production-6df54.up.railway.app ✅
+- Frontend: https://aiex-quiz-platform-fmsq1hijz-cubetribes-projects.vercel.app ✅
+
+Das gesamte System ist jetzt vollständig funktional und korrekt deployed!
