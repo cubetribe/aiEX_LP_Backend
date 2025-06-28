@@ -1413,4 +1413,111 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
       auth: false,
     },
   },
+  {
+    method: 'GET',
+    path: '/queues/status',
+    handler: async (ctx) => {
+      try {
+        if (!strapi.queueService || !strapi.queueService.isInitialized) {
+          ctx.body = {
+            success: false,
+            message: 'Queue service not initialized',
+            data: { enabled: false }
+          };
+          return;
+        }
+
+        const stats = await strapi.queueService.getAllQueueStats();
+        
+        ctx.body = {
+          success: true,
+          data: {
+            enabled: true,
+            initialized: strapi.queueService.isInitialized,
+            stats
+          }
+        };
+
+      } catch (error) {
+        strapi.log.error('Error getting queue status:', error);
+        ctx.status = 500;
+        ctx.body = { 
+          success: false,
+          error: 'Failed to get queue status',
+          details: error.message 
+        };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'POST',
+    path: '/queues/:queueName/pause',
+    handler: async (ctx) => {
+      const { queueName } = ctx.params;
+
+      try {
+        if (!strapi.queueService || !strapi.queueService.isInitialized) {
+          ctx.status = 503;
+          ctx.body = { error: 'Queue service not available' };
+          return;
+        }
+
+        await strapi.queueService.pauseQueue(queueName);
+        
+        ctx.body = {
+          success: true,
+          message: `Queue ${queueName} paused`
+        };
+
+      } catch (error) {
+        strapi.log.error(`Error pausing queue ${queueName}:`, error);
+        ctx.status = 500;
+        ctx.body = { 
+          success: false,
+          error: 'Failed to pause queue',
+          details: error.message 
+        };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'POST',
+    path: '/queues/:queueName/resume',
+    handler: async (ctx) => {
+      const { queueName } = ctx.params;
+
+      try {
+        if (!strapi.queueService || !strapi.queueService.isInitialized) {
+          ctx.status = 503;
+          ctx.body = { error: 'Queue service not available' };
+          return;
+        }
+
+        await strapi.queueService.resumeQueue(queueName);
+        
+        ctx.body = {
+          success: true,
+          message: `Queue ${queueName} resumed`
+        };
+
+      } catch (error) {
+        strapi.log.error(`Error resuming queue ${queueName}:`, error);
+        ctx.status = 500;
+        ctx.body = { 
+          success: false,
+          error: 'Failed to resume queue',
+          details: error.message 
+        };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
 ];

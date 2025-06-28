@@ -25,6 +25,22 @@ module.exports = {
     } catch (error) {
       strapi.log.error('❌ Error initializing Email service:', error);
     }
+
+    // Initialize Queue Service
+    try {
+      const QueueService = require('./services/queue.service');
+      const queueService = new QueueService(strapi);
+      
+      // Store queue service in strapi for global access
+      strapi.queueService = queueService;
+      
+      // Initialize queue service
+      await queueService.initialize();
+      strapi.log.info('✅ Queue Service initialized successfully');
+    } catch (error) {
+      strapi.log.error('❌ Error initializing Queue service:', error);
+      strapi.log.warn('⚠️ Queue service disabled - continuing without background jobs');
+    }
     
     // Register custom routes
     try {

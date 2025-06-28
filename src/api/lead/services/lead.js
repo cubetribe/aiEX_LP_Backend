@@ -50,7 +50,7 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
 
       // Get campaign for conditional scoring
       const campaignData = await strapi.entityService.findOne('api::campaign.campaign', data.campaign, {
-        fields: ['config', 'jsonCode']
+        fields: ['config', 'jsonCode', 'resultDeliveryMode']
       });
 
       // Calculate score and quality with campaign logic
@@ -82,12 +82,114 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
 
       strapi.log.info(`Lead created: ${lead.email} (Score: ${leadScore}, Quality: ${leadQuality})`);
       
-      // Handle result delivery based on campaign configuration
-      await this.handleResultDelivery(lead, campaignData);
+      // Queue-based result delivery if queue service is available
+      if (strapi.queueService && strapi.queueService.isInitialized) {
+        await this.handleQueuedResultDelivery(lead, campaignData);
+      } else {
+        // Fallback to immediate processing
+        await this.handleResultDelivery(lead, campaignData);
+      }
       
       return lead;
     } catch (error) {
       strapi.log.error('Error processing lead submission:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Handle result delivery using queue system
+   */
+  async handleQueuedResultDelivery(lead, campaignData) {
+    try {
+      const resultConfig = campaignData?.resultDisplayConfig || {};
+      const deliveryMode = campaignData?.resultDeliveryMode || 'show_only';
+      
+      strapi.log.info(`🚀 Queuing result delivery for lead ${lead.id} (mode: ${deliveryMode})`);
+
+      // Queue AI processing job
+      if (deliveryMode !== 'show_only' || resultConfig.showOnScreen) {
+        await strapi.queueService.addAIProcessingJob({
+          leadId: lead.id,
+          campaignId: campaignData.id
+        }, {
+          priority: leadQuality === 'hot' ? 'high' : 'normal'
+        });
+      }
+
+      // Queue sheets export if configured
+      if (campaignData.googleSheetId) {
+        await strapi.queueService.addSheetsExportJob({
+          leadId: lead.id,
+          campaignId: campaignData.id
+        });
+      }
+
+      // Queue analytics tracking
+      await strapi.queueService.addAnalyticsJob({
+        event: 'lead_created',
+        data: {
+          leadId: lead.id,
+          campaignId: campaignData.id,
+          leadScore: lead.leadScore,
+          leadQuality: lead.leadQuality
+        }
+      });
+
+      strapi.log.info(`✅ Jobs queued successfully for lead ${lead.id}`);
+      
+    } catch (error) {
+      strapi.log.error('Error queuing result delivery:', error);
+      // Fall back to immediate processing
+      await this.handleResultDelivery(lead, campaignData);
+    }
+  },
+
+  /**
+   * Process lead with AI (for queue processing)
+   */
+  async processLeadWithAI(leadId) {
+    try {
+      const lead = await strapi.entityService.findOne('api::lead.lead', leadId, {
+        populate: ['campaign']
+      });
+
+      if (!lead) {
+        throw new Error(`Lead ${leadId} not found`);
+      }
+
+      // Update processing status
+      await strapi.entityService.update('api::lead.lead', leadId, {
+        data: { aiProcessingStatus: 'processing' }
+      });
+
+      // Generate AI result
+      const aiResult = await this.generateAIResult(lead, lead.campaign);
+
+      // Update lead with result
+      await strapi.entityService.update('api::lead.lead', leadId, {
+        data: {
+          aiResult,
+          aiProcessingStatus: 'completed'
+        }
+      });
+
+      strapi.log.info(`🤖 AI processing completed for lead ${leadId}`);
+
+      return {
+        success: true,
+        aiResult,
+        leadId
+      };
+
+    } catch (error) {
+      strapi.log.error(`❌ AI processing failed for lead ${leadId}:`, error);
+      
+      // Update status to failed
+      await strapi.entityService.update('api::lead.lead', leadId, {
+        data: { aiProcessingStatus: 'failed' }
+      });
+
       throw error;
     }
   },
