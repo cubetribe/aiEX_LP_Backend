@@ -48,6 +48,7 @@ module.exports = [
     path: '/campaigns/public/:slug',
     handler: async (ctx) => {
       const { slug } = ctx.params;
+      const debugLogger = require('../services/debug-logger.service');
 
       try {
         // Set CORS headers manually
@@ -59,6 +60,9 @@ module.exports = [
           ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         }
 
+        // Log API request start
+        await debugLogger.logAPI(ctx, `/campaigns/public/${slug}`, null, null);
+
         const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
           filters: {
             slug,
@@ -68,6 +72,7 @@ module.exports = [
         });
 
         if (!campaigns || campaigns.length === 0) {
+          await debugLogger.logCampaign('GET_BY_SLUG', slug, { found: false }, 'ERROR', new Error('Campaign not found'), ctx);
           ctx.status = 404;
           ctx.body = { error: 'Campaign not found' };
           return;
@@ -75,19 +80,37 @@ module.exports = [
 
         const campaign = campaigns[0];
         
+        // Log detailed campaign data before processing
+        await debugLogger.logCampaign('GET_BY_SLUG', slug, {
+          campaignId: campaign.id,
+          fieldsReturned: Object.keys(campaign),
+          hasResultDeliveryMode: !!campaign.resultDeliveryMode,
+          hasResultDisplayConfig: !!campaign.resultDisplayConfig,
+          hasShowResultImmediately: !!campaign.showResultImmediately,
+          configSize: campaign.config ? JSON.stringify(campaign.config).length : 0,
+          jsonCodeSize: campaign.jsonCode ? campaign.jsonCode.length : 0
+        }, 'SUCCESS', null, ctx);
+        
         // Merge jsonCode with config if jsonCode is present
         if (campaign.jsonCode && campaign.jsonCode.trim()) {
           try {
             const jsonConfig = JSON.parse(campaign.jsonCode);
             campaign.config = { ...campaign.config, ...jsonConfig };
+            await debugLogger.logCampaign('JSON_MERGE', slug, { mergedFields: Object.keys(jsonConfig) }, 'SUCCESS', null, ctx);
             strapi.log.info(`Merged jsonCode config for campaign ${slug}`);
           } catch (error) {
+            await debugLogger.logCampaign('JSON_MERGE', slug, { jsonCode: campaign.jsonCode }, 'ERROR', error, ctx);
             strapi.log.error(`Invalid JSON in jsonCode for campaign ${slug}:`, error);
           }
         }
         
-        ctx.body = { data: campaign };
+        // Log final response data
+        const responseData = { data: campaign };
+        await debugLogger.logAPI(ctx, `/campaigns/public/${slug}`, responseData, null);
+        
+        ctx.body = responseData;
       } catch (error) {
+        await debugLogger.logCampaign('GET_BY_SLUG', slug, {}, 'ERROR', error, ctx);
         strapi.log.error('Error finding campaign by slug:', error);
         ctx.status = 500;
         ctx.body = { error: 'Failed to fetch campaign' };
@@ -567,9 +590,10 @@ module.exports = [
     method: 'GET',
     path: '/leads/:id/status',
     handler: async (ctx) => {
+      const { id } = ctx.params;
+      const debugLogger = require('../services/debug-logger.service');
+      
       try {
-        const { id } = ctx.params;
-        
         // Set CORS headers
         const origin = ctx.get('Origin');
         if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
@@ -579,16 +603,31 @@ module.exports = [
           ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         }
 
+        // Log API request
+        await debugLogger.logAPI(ctx, `/leads/${id}/status`, null, null);
+
         const lead = await strapi.entityService.findOne('api::lead.lead', id);
 
         if (!lead) {
+          await debugLogger.logLead('GET_STATUS', id, { found: false }, 'ERROR', new Error('Lead not found'), ctx);
           ctx.status = 404;
           ctx.body = { error: 'Lead not found' };
           return;
         }
 
+        // Log lead status details
+        await debugLogger.logLead('GET_STATUS', id, {
+          leadId: lead.id,
+          status: lead.aiProcessingStatus,
+          progress: lead.processingProgress,
+          currentStep: lead.currentProcessingStep,
+          hasAiResult: !!lead.aiResult,
+          leadScore: lead.leadScore,
+          leadQuality: lead.leadQuality
+        }, 'SUCCESS', null, ctx);
+
         // Return lead processing status
-        ctx.body = {
+        const responseData = {
           success: true,
           data: {
             id: lead.id,
@@ -601,7 +640,11 @@ module.exports = [
             leadQuality: lead.leadQuality
           }
         };
+        
+        await debugLogger.logAPI(ctx, `/leads/${id}/status`, responseData, null);
+        ctx.body = responseData;
       } catch (error) {
+        await debugLogger.logLead('GET_STATUS', id, {}, 'ERROR', error, ctx);
         strapi.log.error('Error fetching lead status:', error);
         ctx.status = 500;
         ctx.body = { error: 'Failed to fetch lead status' };
@@ -934,6 +977,94 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
         strapi.log.error('Error in debug campaigns:', error);
         ctx.status = 500;
         ctx.body = { error: 'Debug failed' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'GET',
+    path: '/debug/logs',
+    handler: async (ctx) => {
+      try {
+        const debugLogger = require('../services/debug-logger.service');
+        
+        // Set CORS headers
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          ctx.set('Access-Control-Allow-Origin', origin);
+          ctx.set('Access-Control-Allow-Credentials', 'true');
+          ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+
+        const { component, limit = 20 } = ctx.query;
+        const logs = await debugLogger.getRecentLogs(component, parseInt(limit));
+        const errorSummary = await debugLogger.getErrorSummary(24);
+        
+        ctx.body = {
+          success: true,
+          data: {
+            logs,
+            errorSummary,
+            filters: { component, limit }
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error fetching debug logs:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to fetch debug logs' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'POST',
+    path: '/debug/init-table',
+    handler: async (ctx) => {
+      try {
+        // Create debug table if it doesn't exist
+        const knex = strapi.db.connection;
+        
+        const tableExists = await knex.schema.hasTable('system_debug');
+        if (!tableExists) {
+          await knex.schema.createTable('system_debug', (table) => {
+            table.increments('id').primary();
+            table.string('component', 50).notNullable();
+            table.string('action', 100).notNullable();
+            table.string('status', 20).defaultTo('INFO');
+            table.text('details');
+            table.text('error_message');
+            table.text('user_agent');
+            table.string('ip_address', 45);
+            table.string('session_id', 32);
+            table.timestamp('timestamp').defaultTo(knex.fn.now());
+            table.timestamp('created_at').defaultTo(knex.fn.now());
+            table.timestamp('updated_at').defaultTo(knex.fn.now());
+            
+            // Indexes
+            table.index(['component']);
+            table.index(['status']);
+            table.index(['timestamp']);
+            table.index(['component', 'action']);
+          });
+          
+          ctx.body = { success: true, message: 'Debug table created successfully' };
+        } else {
+          ctx.body = { success: true, message: 'Debug table already exists' };
+        }
+        
+        // Log the initialization
+        const debugLogger = require('../services/debug-logger.service');
+        await debugLogger.logSystem('TABLE_INIT', { tableExists }, 'SUCCESS');
+        
+      } catch (error) {
+        strapi.log.error('Error initializing debug table:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to initialize debug table' };
       }
     },
     config: {
