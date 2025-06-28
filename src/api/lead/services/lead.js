@@ -313,63 +313,119 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
   },
 
   /**
-   * Generate AI result based on responses
+   * Generate AI result - Enhanced with real AI integration
    */
   async generateAIResult(lead, campaignData) {
     try {
-      // For now, generate a simple result based on lead quality and responses
-      // Later this can be enhanced with actual AI integration
-      
-      const { leadScore, leadQuality } = lead;
-      const responses = lead.responses || {};
-      const campaignTitle = campaignData?.title || 'Quiz';
-      
-      let result = '';
-      
-      // Quality-based messaging
-      if (leadQuality === 'hot') {
-        result += `🔥 Ausgezeichnet! Sie sind ein Premium-Lead mit ${leadScore}/100 Punkten.\n\n`;
-        result += `Basierend auf Ihren Antworten sehen wir großes Potenzial für eine Zusammenarbeit. `;
-        result += `Ihre Bedürfnisse decken sich perfekt mit unseren Lösungen.\n\n`;
-      } else if (leadQuality === 'warm') {
-        result += `⭐ Sehr gut! Sie haben ${leadScore}/100 Punkte erreicht.\n\n`;
-        result += `Ihre Antworten zeigen klares Interesse an unseren Lösungen. `;
-        result += `Mit den richtigen Maßnahmen können wir Ihnen optimal helfen.\n\n`;
-      } else if (leadQuality === 'cold') {
-        result += `💡 Interessant! Sie haben ${leadScore}/100 Punkte erreicht.\n\n`;
-        result += `Ihre Antworten zeigen, dass Sie noch am Anfang stehen. `;
-        result += `Wir haben einige Empfehlungen für Ihren Einstieg.\n\n`;
-      } else {
-        result += `📋 Vielen Dank für Ihre Teilnahme!\n\n`;
-        result += `Ihre Antworten geben uns einen ersten Einblick. `;
-        result += `Hier sind einige allgemeine Empfehlungen für Sie.\n\n`;
+      // Try real AI integration first
+      const aiResult = await this.generateRealAIResult(lead, campaignData);
+      if (aiResult) {
+        return aiResult;
       }
       
-      // Add personalized recommendations based on responses
-      result += this.generatePersonalizedRecommendations(responses, leadQuality);
-      
-      // Add next steps
-      result += `\n\n📞 Nächste Schritte:\n`;
-      if (leadQuality === 'hot') {
-        result += `• Sprechen Sie direkt mit unserem Experten-Team\n`;
-        result += `• Erhalten Sie eine kostenlose Erstberatung\n`;
-        result += `• Individuelle Lösungsempfehlung binnen 24h\n`;
-      } else if (leadQuality === 'warm') {
-        result += `• Laden Sie unseren kostenlosen Leitfaden herunter\n`;
-        result += `• Buchen Sie ein unverbindliches Beratungsgespräch\n`;
-        result += `• Erhalten Sie maßgeschneiderte Empfehlungen\n`;
-      } else {
-        result += `• Informieren Sie sich über unsere Basis-Angebote\n`;
-        result += `• Nutzen Sie unsere kostenlosen Ressourcen\n`;
-        result += `• Bleiben Sie über unseren Newsletter informiert\n`;
-      }
-      
-      return result;
+      // Fallback to template-based result
+      return this.generateTemplateResult(lead, campaignData);
       
     } catch (error) {
       strapi.log.error('Error generating AI result:', error);
-      return 'Vielen Dank für Ihre Teilnahme! Wir werden uns in Kürze bei Ihnen melden.';
+      return this.generateTemplateResult(lead, campaignData);
     }
+  },
+
+  /**
+   * Generate real AI result using AI provider service
+   */
+  async generateRealAIResult(lead, campaignData) {
+    try {
+      const aiProviderService = require('../../../services/ai-provider.service');
+      
+      if (!aiProviderService || !campaignData.aiPromptTemplate) {
+        return null;
+      }
+      
+      // Prepare AI context
+      const aiContext = {
+        firstName: lead.firstName,
+        responses: lead.responses,
+        leadScore: lead.leadScore,
+        leadQuality: lead.leadQuality,
+        campaignTitle: campaignData.title
+      };
+      
+      // Generate AI result
+      const aiResult = await aiProviderService.generateContent(
+        campaignData.aiPromptTemplate,
+        aiContext,
+        {
+          provider: campaignData.aiProvider || 'auto',
+          model: campaignData.aiModel || 'gpt-4o',
+          temperature: campaignData.aiTemperature || 0.7,
+          maxTokens: campaignData.aiMaxTokens || 1000
+        }
+      );
+      
+      if (aiResult && aiResult.content) {
+        strapi.log.info(`🤖 Real AI result generated for lead ${lead.id}`);
+        return aiResult.content;
+      }
+      
+      return null;
+      
+    } catch (error) {
+      strapi.log.error('Real AI generation failed:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Generate template-based result (fallback)
+   */
+  generateTemplateResult(lead, campaignData) {
+    const { leadScore, leadQuality } = lead;
+    const responses = lead.responses || {};
+    const campaignTitle = campaignData?.title || 'Quiz';
+    
+    let result = '';
+    
+    // Quality-based messaging
+    if (leadQuality === 'hot') {
+      result += `🔥 Ausgezeichnet! Sie sind ein Premium-Lead mit ${leadScore}/100 Punkten.\n\n`;
+      result += `Basierend auf Ihren Antworten sehen wir großes Potenzial für eine Zusammenarbeit. `;
+      result += `Ihre Bedürfnisse decken sich perfekt mit unseren Lösungen.\n\n`;
+    } else if (leadQuality === 'warm') {
+      result += `⭐ Sehr gut! Sie haben ${leadScore}/100 Punkte erreicht.\n\n`;
+      result += `Ihre Antworten zeigen klares Interesse an unseren Lösungen. `;
+      result += `Mit den richtigen Maßnahmen können wir Ihnen optimal helfen.\n\n`;
+    } else if (leadQuality === 'cold') {
+      result += `💡 Interessant! Sie haben ${leadScore}/100 Punkte erreicht.\n\n`;
+      result += `Ihre Antworten zeigen, dass Sie noch am Anfang stehen. `;
+      result += `Wir haben einige Empfehlungen für Ihren Einstieg.\n\n`;
+    } else {
+      result += `📋 Vielen Dank für Ihre Teilnahme!\n\n`;
+      result += `Ihre Antworten geben uns einen ersten Einblick. `;
+      result += `Hier sind einige allgemeine Empfehlungen für Sie.\n\n`;
+    }
+    
+    // Add personalized recommendations based on responses
+    result += this.generatePersonalizedRecommendations(responses, leadQuality);
+    
+    // Add next steps
+    result += `\n\n📞 Nächste Schritte:\n`;
+    if (leadQuality === 'hot') {
+      result += `• Sprechen Sie direkt mit unserem Experten-Team\n`;
+      result += `• Erhalten Sie eine kostenlose Erstberatung\n`;
+      result += `• Individuelle Lösungsempfehlung binnen 24h\n`;
+    } else if (leadQuality === 'warm') {
+      result += `• Laden Sie unseren kostenlosen Leitfaden herunter\n`;
+      result += `• Buchen Sie ein unverbindliches Beratungsgespräch\n`;
+      result += `• Erhalten Sie maßgeschneiderte Empfehlungen\n`;
+    } else {
+      result += `• Informieren Sie sich über unsere Basis-Angebote\n`;
+      result += `• Nutzen Sie unsere kostenlosen Ressourcen\n`;
+      result += `• Bleiben Sie über unseren Newsletter informiert\n`;
+    }
+    
+    return result;
   },
 
   /**
@@ -422,12 +478,29 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
   },
 
   /**
-   * Send result email using email service
+   * Send result email with enhanced template processing
    */
   async sendResultEmail(lead, campaignData, aiResult) {
     try {
       const emailService = require('../../../services/email.service');
-      const campaign = await strapi.entityService.findOne('api::campaign.campaign', campaignData.id);
+      
+      // Check if email is required for this campaign
+      if (!this.shouldSendEmail(campaignData, lead)) {
+        return { 
+          success: false, 
+          reason: 'Email sending not enabled for this campaign',
+          skipReason: 'EMAIL_NOT_REQUIRED'
+        };
+      }
+      
+      // Check if lead has email address
+      if (!lead.email) {
+        return { 
+          success: false, 
+          reason: 'Lead has no email address',
+          skipReason: 'NO_EMAIL_ADDRESS'
+        };
+      }
       
       // Check if email service is configured
       if (!emailService.isConfigured) {
@@ -439,12 +512,23 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
         };
       }
       
+      // Get full campaign data
+      const campaign = await strapi.entityService.findOne('api::campaign.campaign', campaignData.id);
+      
       const emailResult = await emailService.sendResultEmail(lead, campaign, aiResult);
       
       if (emailResult.success) {
-        strapi.log.info(`Result email sent to ${lead.email}: ${emailResult.messageId}`);
+        strapi.log.info(`✅ Result email sent to ${lead.email}: ${emailResult.messageId}`);
+        
+        // Update lead with email sent status
+        await strapi.entityService.update('api::lead.lead', lead.id, {
+          data: {
+            emailSent: true,
+            emailSentAt: new Date()
+          }
+        });
       } else {
-        strapi.log.warn(`Failed to send result email to ${lead.email}: ${emailResult.reason || emailResult.error}`);
+        strapi.log.warn(`⚠️ Failed to send result email to ${lead.email}: ${emailResult.reason || emailResult.error}`);
       }
       
       return emailResult;
@@ -456,6 +540,31 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
         skipReason: 'EMAIL_SERVICE_ERROR'
       };
     }
+  },
+
+  /**
+   * Check if email should be sent for this campaign
+   */
+  shouldSendEmail(campaignData, lead) {
+    const deliveryMode = campaignData?.resultDeliveryMode || 'show_only';
+    const resultConfig = campaignData?.resultDisplayConfig || {};
+    
+    // Check delivery mode
+    if (deliveryMode === 'email_only' || deliveryMode === 'show_and_email') {
+      return true;
+    }
+    
+    // Check result config
+    if (resultConfig.sendEmail === true) {
+      return true;
+    }
+    
+    // Check if email is required for high-quality leads
+    if (lead.leadQuality === 'hot' && resultConfig.emailHotLeads !== false) {
+      return true;
+    }
+    
+    return false;
   },
 
   /**

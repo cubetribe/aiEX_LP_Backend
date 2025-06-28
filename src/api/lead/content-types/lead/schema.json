@@ -71,6 +71,13 @@
     "userAgent": {
       "type": "string", 
       "maxLength": 500
+    },
+    "emailSent": {
+      "type": "boolean",
+      "default": false
+    },
+    "emailSentAt": {
+      "type": "datetime"
     }
   }
 }
