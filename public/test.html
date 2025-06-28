@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoAIX Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+        .box { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .error { color: #dc3545; background: #f8d7da; border-color: #f5c6cb; }
+        .success { color: #155724; background: #d4edda; border-color: #c3e6cb; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        pre { background: #f1f1f1; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 11px; }
+        .loading { text-align: center; padding: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🚨 GoAIX Emergency Test</h1>
+    <p><strong>Lead 18 Test System</strong> - Testing Backend APIs</p>
+    
+    <div class="box">
+        <h2>🔧 Manual API Tests</h2>
+        <button id="btn-status">Test Lead 18 Status</button>
+        <button id="btn-result">Test Lead 18 Result</button>
+        <button id="btn-campaign">Test Campaign Submit</button>
+        <div id="results"></div>
+    </div>
+
+    <div class="box">
+        <h2>📋 Lead 18 Status</h2>
+        <div id="status" class="loading">Loading Lead 18 status...</div>
+    </div>
+
+    <div class="box">
+        <h2>🎯 AI Result Display</h2>
+        <div id="airesult" class="loading">Loading AI result...</div>
+    </div>
+
+    <div class="box">
+        <h2>🐛 Debug Info</h2>
+        <p>Open browser console (F12) to see detailed API logs</p>
+        <p>API Base: <code>https://web-production-6df54.up.railway.app</code></p>
+    </div>
+
+    <script src="test.js"></script>
+</body>
+</html>
