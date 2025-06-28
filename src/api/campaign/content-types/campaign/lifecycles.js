@@ -2,15 +2,48 @@
 
 /**
  * Campaign lifecycle hooks
- * Auto-generate preview URLs and handle campaign updates
+ * Auto-generate preview URLs, validate config JSON, and handle campaign updates
  */
 
+const { validateCampaignConfig, validateResultDisplayConfig } = require('../../../../utils/campaign-schemas');
 const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'https://aiex-quiz-platform-519nmqcf0-cubetribes-projects.vercel.app';
 
 module.exports = {
   // Before creating a campaign
   async beforeCreate(event) {
     const { data } = event.params;
+    
+    // VALIDATE CONFIG JSON - Prevent invalid configurations
+    if (data.config && data.campaignType) {
+      const validation = validateCampaignConfig(data.config, data.campaignType);
+      
+      if (!validation.success) {
+        const errorMessages = validation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
+        const error = new Error(`Campaign configuration validation failed: ${errorMessages}`);
+        error.details = validation.errors;
+        throw error;
+      }
+      
+      // Use validated config (with defaults applied)
+      data.config = validation.data;
+      strapi.log.info(`✅ Campaign config validated for type: ${data.campaignType}`);
+    }
+    
+    // VALIDATE RESULT DISPLAY CONFIG
+    if (data.resultDisplayConfig) {
+      const resultValidation = validateResultDisplayConfig(data.resultDisplayConfig);
+      
+      if (!resultValidation.success) {
+        const errorMessages = resultValidation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
+        const error = new Error(`Result display configuration validation failed: ${errorMessages}`);
+        error.details = resultValidation.errors;
+        throw error;
+      }
+      
+      // Use validated config
+      data.resultDisplayConfig = resultValidation.data;
+      strapi.log.info(`✅ Result display config validated`);
+    }
     
     // Generate preview URL if slug is available
     if (data.slug) {
@@ -22,6 +55,51 @@ module.exports = {
   // Before updating a campaign
   async beforeUpdate(event) {
     const { data } = event.params;
+    
+    // Get existing campaign to check type
+    const existingCampaign = await strapi.entityService.findOne(
+      'api::campaign.campaign',
+      event.params.where.id
+    );
+    
+    if (!existingCampaign) {
+      throw new Error('Campaign not found for update');
+    }
+    
+    // Use existing type if not provided in update
+    const campaignType = data.campaignType || existingCampaign.campaignType;
+    
+    // VALIDATE CONFIG JSON ON UPDATE
+    if (data.config) {
+      const validation = validateCampaignConfig(data.config, campaignType);
+      
+      if (!validation.success) {
+        const errorMessages = validation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
+        const error = new Error(`Campaign configuration validation failed: ${errorMessages}`);
+        error.details = validation.errors;
+        throw error;
+      }
+      
+      // Use validated config
+      data.config = validation.data;
+      strapi.log.info(`✅ Campaign config validated for update: ${campaignType}`);
+    }
+    
+    // VALIDATE RESULT DISPLAY CONFIG ON UPDATE
+    if (data.resultDisplayConfig) {
+      const resultValidation = validateResultDisplayConfig(data.resultDisplayConfig);
+      
+      if (!resultValidation.success) {
+        const errorMessages = resultValidation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
+        const error = new Error(`Result display configuration validation failed: ${errorMessages}`);
+        error.details = resultValidation.errors;
+        throw error;
+      }
+      
+      // Use validated config
+      data.resultDisplayConfig = resultValidation.data;
+      strapi.log.info(`✅ Result display config validated for update`);
+    }
     
     // Update preview URL if slug changes
     if (data.slug) {

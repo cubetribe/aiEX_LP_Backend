@@ -1602,4 +1602,25 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
       auth: false,
     },
   },
+  {
+    method: 'POST',
+    path: '/process-pending-jobs',
+    handler: async (ctx) => {
+      try {
+        if (strapi.queueService) {
+          const processed = await strapi.queueService.processPendingInMemoryJobs();
+          ctx.body = { success: true, processedJobs: processed };
+        } else {
+          ctx.body = { success: false, error: 'Queue service not available' };
+        }
+      } catch (error) {
+        strapi.log.error('Error processing pending jobs:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to process pending jobs' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
 ];

@@ -8,6 +8,22 @@ module.exports = {
   async bootstrap({ strapi }) {
     strapi.log.info('🎯 Bootstrapping GoAIX Platform...');
     
+    // PRE-BOOT HEALTH CHECKS - Validate critical dependencies
+    try {
+      const { runHealthChecks } = require('./utils/health-checks');
+      const healthChecksPassed = await runHealthChecks();
+      
+      if (!healthChecksPassed) {
+        strapi.log.error('🚨 CRITICAL: Health checks failed - stopping application startup');
+        process.exit(1);
+      }
+      
+      strapi.log.info('✅ Pre-boot health checks completed successfully');
+    } catch (error) {
+      strapi.log.error('🚨 CRITICAL: Health check system failed:', error);
+      strapi.log.warn('⚠️ Continuing startup without health checks...');
+    }
+    
     // Initialize AI Services
     try {
       const aiProviderService = require('./services/ai-provider.service');
