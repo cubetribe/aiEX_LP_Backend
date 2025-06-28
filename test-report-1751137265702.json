@@ -1,0 +1,39 @@
+{
+  "startTime": "2025-06-28T19:00:52.932Z",
+  "tests": [
+    {
+      "name": "Backend Health Check",
+      "passed": false,
+      "details": "Health check failed: {\"data\":null,\"error\":{\"status\":404,\"name\":\"NotFoundError\",\"message\":\"Not Found\",\"details\":{}}}",
+      "duration": 4396,
+      "timestamp": "2025-06-28T19:00:57.329Z"
+    },
+    {
+      "name": "Frontend Connectivity",
+      "passed": false,
+      "details": "Frontend not accessible: 401",
+      "duration": 4255,
+      "timestamp": "2025-06-28T19:01:01.585Z"
+    },
+    {
+      "name": "Queue System Status",
+      "passed": false,
+      "details": "Queue status unavailable: 404",
+      "duration": 4086,
+      "timestamp": "2025-06-28T19:01:05.672Z"
+    },
+    {
+      "name": "AI Providers Status",
+      "passed": true,
+      "details": "AI providers active: openai, anthropic, gemini",
+      "duration": 29,
+      "timestamp": "2025-06-28T19:01:05.701Z"
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "passed": 1,
+    "failed": 3,
+    "skipped": 0
+  }
+}

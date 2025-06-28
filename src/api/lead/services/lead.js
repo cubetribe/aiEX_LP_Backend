@@ -112,15 +112,28 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
       const deliveryMode = campaignData?.resultDeliveryMode || 'show_only';
       
       strapi.log.info(`🚀 Queuing result delivery for lead ${lead.id} (mode: ${deliveryMode})`);
+      strapi.log.info(`🔍 Debug - resultConfig:`, JSON.stringify(resultConfig));
+      strapi.log.info(`🔍 Debug - deliveryMode: ${deliveryMode}, showOnScreen: ${resultConfig.showOnScreen}`);
+      strapi.log.info(`🔍 Debug - condition check: deliveryMode !== 'show_only' = ${deliveryMode !== 'show_only'}, resultConfig.showOnScreen = ${resultConfig.showOnScreen}`);
+      strapi.log.info(`🔍 Debug - queueService available: ${!!strapi.queueService}`);
 
       // Queue AI processing job
       if (deliveryMode !== 'show_only' || resultConfig.showOnScreen) {
-        await strapi.queueService.addAIProcessingJob({
-          leadId: lead.id,
-          campaignId: campaignData.id
-        }, {
-          priority: lead.leadQuality === 'hot' ? 'high' : 'normal'
-        });
+        strapi.log.info(`🎯 About to queue AI processing job for lead ${lead.id}`);
+        try {
+          await strapi.queueService.addAIProcessingJob({
+            leadId: lead.id,
+            campaignId: campaignData.id
+          }, {
+            priority: lead.leadQuality === 'hot' ? 'high' : 'normal'
+          });
+          strapi.log.info(`✅ AI processing job queued successfully for lead ${lead.id}`);
+        } catch (aiJobError) {
+          strapi.log.error(`❌ Failed to queue AI processing job for lead ${lead.id}:`, aiJobError);
+          throw aiJobError;
+        }
+      } else {
+        strapi.log.info(`⏭️ Skipping AI processing job for lead ${lead.id} - condition not met`);
       }
 
       // Queue sheets export if configured
