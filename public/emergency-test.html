@@ -18,9 +18,9 @@
     
     <div class="box">
         <h2>🔧 Manual API Tests</h2>
-        <button onclick="testStatus()">Test Lead 18 Status</button>
-        <button onclick="testResult()">Test Lead 18 Result</button>
-        <button onclick="testCampaign()">Test Campaign Submit</button>
+        <button id="btn-status">Test Lead 18 Status</button>
+        <button id="btn-result">Test Lead 18 Result</button>
+        <button id="btn-campaign">Test Campaign Submit</button>
         <div id="results"></div>
     </div>
 
@@ -96,7 +96,14 @@
             }
         }
 
-        window.onload = loadStatus;
+        window.onload = function() {
+            loadStatus();
+            
+            // Add event listeners
+            document.getElementById('btn-status').addEventListener('click', testStatus);
+            document.getElementById('btn-result').addEventListener('click', testResult);
+            document.getElementById('btn-campaign').addEventListener('click', testCampaign);
+        };
     </script>
 </body>
 </html>
