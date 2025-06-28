@@ -200,14 +200,18 @@ module.exports = [
           return;
         }
 
+        strapi.log.info(`🔍 Looking for campaign ID: ${id} (parsed: ${parseInt(id)})`);
         const campaign = await strapi.entityService.findOne('api::campaign.campaign', parseInt(id));
+        strapi.log.info(`🔍 Campaign found:`, campaign ? 'YES' : 'NO', campaign?.title);
 
         if (!campaign) {
+          strapi.log.error(`❌ Campaign ${id} not found in database`);
           ctx.status = 404;
           ctx.body = { 
             error: 'Campaign not found or inactive',
             debug: { 
               id, 
+              parsedId: parseInt(id),
               found: !!campaign, 
               isActive: campaign?.isActive,
               status: campaign?.status,
