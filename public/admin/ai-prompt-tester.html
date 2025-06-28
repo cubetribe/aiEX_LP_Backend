@@ -307,16 +307,22 @@
           </div>
           
           <div class="form-group">
-            <label>Select Providers to Test</label>
+            <label>Select Models to Test</label>
             <div class="provider-status">
               <label class="sample-btn">
-                <input type="checkbox" value="openai" checked> OpenAI
+                <input type="checkbox" value="gpt-4o" data-provider="openai" checked> GPT-4o
               </label>
               <label class="sample-btn">
-                <input type="checkbox" value="anthropic" checked> Anthropic
+                <input type="checkbox" value="gpt-3.5-turbo" data-provider="openai"> GPT-3.5
               </label>
               <label class="sample-btn">
-                <input type="checkbox" value="gemini" checked> Gemini
+                <input type="checkbox" value="claude-3-opus" data-provider="anthropic" checked> Claude Opus
+              </label>
+              <label class="sample-btn">
+                <input type="checkbox" value="claude-3-sonnet" data-provider="anthropic"> Claude Sonnet
+              </label>
+              <label class="sample-btn">
+                <input type="checkbox" value="gemini-1.5-pro" data-provider="gemini" checked> Gemini Pro
               </label>
             </div>
           </div>
@@ -324,9 +330,10 @@
           <div class="form-group">
             <label>Sample Data</label>
             <div class="sample-selector" id="sampleSelector">
-              <button class="sample-btn active" data-sample="business">Business Lead</button>
-              <button class="sample-btn" data-sample="private">Private Lead</button>
-              <button class="sample-btn" data-sample="hot">Hot Lead</button>
+              <button class="sample-btn active" data-sample="quiz-business">Quiz: Business</button>
+              <button class="sample-btn" data-sample="quiz-private">Quiz: Privat</button>
+              <button class="sample-btn" data-sample="quiz-tech">Quiz: Tech</button>
+              <button class="sample-btn" data-sample="campaign-create">Campaign Creator</button>
             </div>
           </div>
           
@@ -339,21 +346,21 @@
           
           <div class="form-group">
             <label>Custom Prompt (uses variables like {{firstName}}, {{responses}})</label>
-            <textarea id="promptTemplate" placeholder="Enter your prompt template here...">Erstelle eine personalisierte AI-Bedarfsanalyse für {{firstName}}.
+            <textarea id="promptTemplate" placeholder="Enter your prompt template here...">Analysiere die Quiz-Antworten und erstelle eine personalisierte AI-Empfehlung für {{firstName}}.
 
-Lead-Informationen:
-- Name: {{firstName}}
-- E-Mail: {{email}}
-- Lead-Score: {{leadScore}}/100
-- Lead-Qualität: {{leadQuality}}
+Campaign: {{campaignTitle}}
+Lead-Score: {{leadScore}}/100 ({{leadQuality}})
 
-Antworten:
+Quiz-Antworten:
 {{responses}}
 
-Erstelle eine professionelle Empfehlung mit:
-1. Persönliche Einschätzung
-2. AI-Potenzial
-3. Konkrete nächste Schritte</textarea>
+Erstelle eine detaillierte, personalisierte Analyse mit:
+1. 🎯 Zusammenfassung der Situation
+2. 💡 AI-Potenzial basierend auf den Antworten
+3. 📋 3-5 konkrete Handlungsempfehlungen
+4. 🚀 Nächste Schritte mit Zeitplan
+
+Schreibe professionell aber persönlich. Nutze die spezifischen Antworten für maßgeschneiderte Empfehlungen.</textarea>
           </div>
           
           <button class="btn" id="testBtn">
@@ -377,48 +384,70 @@ Erstelle eine professionelle Empfehlung mit:
   </div>
   
   <script>
-    // Sample data presets
+    // Sample data presets für Quiz-Auswertungen
     const sampleData = {
-      business: {
+      'quiz-business': {
         firstName: "Max",
         email: "max@company.de",
         leadScore: 85,
         leadQuality: "hot",
+        campaignTitle: "AI-Readiness Assessment für Unternehmen",
         responses: {
           user_type: "Unternehmer",
           company_size: "51-200",
-          industry: "Technologie",
-          ai_experience: "Mittel"
+          industry: "E-Commerce",
+          current_challenges: "Prozessautomatisierung, Kundenservice, Datenanalyse",
+          ai_experience: "Erste Erfahrungen mit ChatGPT",
+          budget: "50k-100k",
+          timeline: "Q2 2025",
+          decision_maker: "Ja, Geschäftsführer"
         }
       },
-      private: {
-        firstName: "Anna",
-        email: "anna@gmail.com",
-        leadScore: 45,
+      'quiz-private': {
+        firstName: "Sarah",
+        email: "sarah@gmail.com",
+        leadScore: 55,
         leadQuality: "warm",
+        campaignTitle: "Persönlicher AI-Kompetenz Check",
         responses: {
           user_type: "Privatperson",
-          income: "60k-100k",
-          goal: "Karriere",
-          ai_experience: "Wenig"
+          current_job: "Marketing Manager",
+          ai_interest: "Berufliche Weiterbildung",
+          skill_level: "Anfänger mit Grundkenntnissen",
+          learning_goals: "AI-Tools für Marketing nutzen",
+          time_investment: "5-10 Stunden pro Woche",
+          preferred_format: "Online-Kurse mit Praxisbeispielen"
         }
       },
-      hot: {
-        firstName: "Thomas",
-        email: "thomas@enterprise.com",
-        leadScore: 95,
+      'quiz-tech': {
+        firstName: "David",
+        email: "david@startup.io",
+        leadScore: 92,
         leadQuality: "hot",
+        campaignTitle: "Technical AI Implementation Readiness",
         responses: {
-          user_type: "Unternehmer",
-          company_size: "200+",
-          industry: "Produktion",
-          ai_experience: "Viel",
-          budget: "100k+"
+          user_type: "Tech Startup Founder",
+          company_stage: "Series A",
+          tech_stack: "Python, React, AWS",
+          ai_use_case: "Recommendation Engine für SaaS-Produkt",
+          technical_team: "5 Entwickler, 2 Data Scientists",
+          infrastructure: "Cloud-native, Kubernetes",
+          specific_needs: "LLM Fine-tuning, Vector Databases",
+          timeline: "ASAP - Q1 2025"
         }
+      },
+      'campaign-create': {
+        campaignGoal: "Lead-Generierung für AI-Beratung",
+        targetAudience: "KMU mit 10-500 Mitarbeitern",
+        industry: "Alle Branchen",
+        painPoints: "Effizienzsteigerung, Kostensenkung, Innovation",
+        desiredOutcome: "Qualifizierte Leads für Erstberatung",
+        quizLength: "5-7 Fragen",
+        scoringFocus: "Budget und Entscheidungsbefugnis"
       }
     };
     
-    let currentSample = 'business';
+    let currentSample = 'quiz-business';
     let templates = [];
     
     // Initialize
@@ -519,16 +548,19 @@ Erstelle eine professionelle Empfehlung mit:
     
     async function testPrompt() {
       const promptTemplate = document.getElementById('promptTemplate').value;
-      const selectedProviders = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
-        .map(cb => cb.value);
+      const selectedModels = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(cb => ({
+          model: cb.value,
+          provider: cb.dataset.provider
+        }));
       
       if (!promptTemplate.trim()) {
         alert('Please enter a prompt template');
         return;
       }
       
-      if (selectedProviders.length === 0) {
-        alert('Please select at least one provider');
+      if (selectedModels.length === 0) {
+        alert('Please select at least one model');
         return;
       }
       
@@ -541,7 +573,7 @@ Erstelle eine professionelle Empfehlung mit:
       resultsDiv.innerHTML = `
         <div class="loading">
           <div class="spinner"></div>
-          <p>Testing prompt with ${selectedProviders.length} providers...</p>
+          <p>Testing prompt with ${selectedModels.length} models...</p>
         </div>
       `;
       
@@ -554,8 +586,9 @@ Erstelle eine professionelle Empfehlung mit:
           body: JSON.stringify({
             promptTemplate: promptTemplate,
             sampleDataId: currentSample,
-            providers: selectedProviders,
-            model: 'auto'
+            providers: selectedModels.map(m => m.provider),
+            models: selectedModels,
+            model: selectedModels[0]?.model || 'auto'
           })
         });
         

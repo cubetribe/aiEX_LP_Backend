@@ -834,115 +834,190 @@ module.exports = [
       try {
         // Load prompt templates
         const templates = {
-          'business-analysis': {
-            name: 'Business AI-Analyse',
-            description: 'Für B2B-Leads mit Fokus auf Business-Potenzial',
-            template: `Erstelle eine personalisierte AI-Bedarfsanalyse für {{firstName}}.
+          'quiz-result-business': {
+            name: 'Quiz-Auswertung: Business AI Assessment',
+            description: 'Personalisierte Auswertung für Unternehmens-Leads',
+            template: `Analysiere die Quiz-Antworten und erstelle eine personalisierte AI-Strategie für {{firstName}}.
 
-Basis-Informationen:
-- Name: {{firstName}}
-- E-Mail: {{email}}
-- Lead-Score: {{leadScore}}/100
-- Lead-Qualität: {{leadQuality}}
+Campaign: {{campaignTitle}}
+Lead-Qualität: {{leadQuality}} (Score: {{leadScore}}/100)
 
-Antworten aus dem Quiz:
+Quiz-Antworten im Detail:
 {{responses}}
 
-Erstelle eine professionelle, strukturierte Empfehlung mit folgenden Bereichen:
-1. 🎯 Persönliche Einschätzung (basierend auf den Antworten)
-2. 💡 AI-Potenzial für das Unternehmen/die Person
-3. 📋 Konkrete nächste Schritte
-4. 🚀 Individuelle Empfehlungen
+Erstelle eine Executive Summary mit:
 
-Stil: Professionell, präzise, actionable. Nutze Emojis für bessere Struktur.`
+## 🎯 Ihre Ausgangssituation
+[Fasse die wichtigsten Punkte aus den Antworten zusammen]
+
+## 💡 AI-Potenzialanalyse für Ihr Unternehmen
+[Spezifische AI-Anwendungsfälle basierend auf Branche, Größe und Herausforderungen]
+
+## 📊 ROI-Prognose
+[Konkrete Einsparpotenziale und Effizienzgewinne]
+
+## 🛠 Empfohlene AI-Tools & Lösungen
+[3-5 konkrete Tools/Lösungen mit Begründung]
+
+## 🚀 Ihr 90-Tage AI-Implementierungsplan
+[Schritt-für-Schritt Roadmap]
+
+## 💰 Investment & Ressourcen
+[Budget-Empfehlung basierend auf den Antworten]
+
+Schreibe executive-gerecht, datengetrieben und handlungsorientiert.`
           },
-          'personal-coaching': {
-            name: 'Personal AI-Coaching',
-            description: 'Für Privatpersonen mit Fokus auf persönliche Entwicklung',
-            template: `Erstelle ein personalisiertes AI-Coaching-Ergebnis für {{firstName}}.
+          'quiz-result-private': {
+            name: 'Quiz-Auswertung: Persönliche AI-Journey',
+            description: 'Individuelle Auswertung für Privatpersonen',
+            template: `Erstelle eine persönliche AI-Lernstrategie für {{firstName}}.
 
-Lead-Informationen:
-- Name: {{firstName}}
-- Lead-Score: {{leadScore}}/100
-- Qualifikation: {{leadQuality}}
+Ihre AI-Kompetenz: {{leadQuality}} ({{leadScore}}/100 Punkte)
 
-Quiz-Antworten:
+Ihre Antworten:
 {{responses}}
 
-Erstelle eine motivierende, persönliche Empfehlung:
+Gestalte einen persönlichen AI-Entwicklungsplan:
 
-🎯 **Deine AI-Persönlichkeitsanalyse**
-[Basierend auf den Antworten eine persönliche Einschätzung]
+## 🎯 Dein AI-Profil
+[Persönliche Stärken und Entwicklungsfelder]
 
-💡 **AI-Potenzial für dich**
-[Wie AI dir persönlich helfen kann]
+## 🌟 Deine AI-Superkräfte
+[Welche AI-Tools perfekt zu den Zielen passen]
 
-📚 **Empfohlene nächste Schritte**
-[Konkrete, umsetzbare Schritte]
+## 📚 Dein personalisierter Lernpfad
+[Kurse, Ressourcen, Übungen - angepasst an Zeitbudget]
 
-🚀 **Dein Weg zum AI-Experten**
-[Personalisierte Roadmap]
+## 💡 Quick Wins - Sofort umsetzbar
+[3 AI-Tools die du heute noch nutzen kannst]
 
-Ton: Persönlich, motivierend, ermutigend aber professionell.`
+## 🚀 Deine AI-Karriere Roadmap
+[6-Monats-Plan für AI-Skills]
+
+## 🎁 Bonus-Ressourcen
+[Kostenlose Tools, Communities, Tutorials]
+
+Schreibe motivierend, praxisnah und ermutigend. Berücksichtige das angegebene Zeitbudget.`
           },
-          'technical-assessment': {
-            name: 'Technische AI-Bewertung',
-            description: 'Für Tech-affine Zielgruppen mit detaillierten Empfehlungen',
-            template: `Technische AI-Expertise-Bewertung für {{firstName}}.
+          'campaign-creator': {
+            name: '🔧 Campaign Creator Blueprint',
+            description: 'Erstellt komplette Quiz-Campaign Konfiguration als JSON',
+            template: `Erstelle eine vollständige Quiz-Campaign Konfiguration für folgendes Ziel:
 
-Daten:
-- Lead-Score: {{leadScore}}/100
-- Qualifikation: {{leadQuality}}
-- Antworten: {{responses}}
+Campaign-Briefing:
+{{campaignGoal}}
 
-Erstelle eine technisch fundierte Analyse:
+Zielgruppe: {{targetAudience}}
+Branche: {{industry}}
+Pain Points: {{painPoints}}
+Gewünschtes Ergebnis: {{desiredOutcome}}
+Quiz-Länge: {{quizLength}}
+Scoring-Fokus: {{scoringFocus}}
 
-## 🔍 Expertise-Level Analyse
-[Bewertung der aktuellen AI-Kenntnisse]
+Erstelle eine VOLLSTÄNDIGE JSON-Konfiguration für das GoAIX Campaign System:
 
-## ⚙️ Technische Empfehlungen
-- Tools & Frameworks
-- APIs & Integrationen
-- Best Practices
+\`\`\`json
+{
+  "type": "quiz",
+  "title": "[Packender Titel]",
+  "description": "[Überzeugende Beschreibung]",
+  "questions": [
+    // {{quizLength}} intelligente Fragen mit Conditional Logic
+  ],
+  "scoring": {
+    "logic": "conditional",
+    "rules": [
+      // Scoring-Regeln basierend auf {{scoringFocus}}
+    ],
+    "default": { "leadScore": 50, "leadQuality": "warm" }
+  },
+  "styling": {
+    "primaryColor": "#007bff",
+    "secondaryColor": "#6c757d"
+  },
+  "behavior": {
+    "showProgress": true,
+    "conditionalLogic": true
+  }
+}
+\`\`\`
 
-## 🛠 Implementation Roadmap
-[Schritt-für-Schritt technischer Plan]
-
-## 📊 ROI-Projektion
-[Erwartete Effizienzgewinne]
-
-## 🔗 Nützliche Ressourcen
-[Spezifische Tools und Links]
-
-Stil: Technisch präzise, aber verständlich. Fokus auf Umsetzbarkeit.`
+WICHTIG: 
+- Nutze Conditional Logic für dynamische Folgefragen
+- Fragen müssen auf {{painPoints}} eingehen
+- Scoring muss {{scoringFocus}} priorisieren
+- Generiere VALIDES JSON das direkt in GoAIX funktioniert`
           },
-          'sales-focused': {
-            name: 'Sales-orientierte Empfehlung',
-            description: 'Optimiert für Lead-Konversion und Sales-Prozess',
-            template: `Sales-optimierte Empfehlung für {{firstName}} ({{leadQuality}} Lead).
+          'quiz-result-tech': {
+            name: 'Quiz-Auswertung: Technical Deep Dive',
+            description: 'Technische Analyse für IT-Professionals',
+            template: `Erstelle eine technische AI-Implementation Analyse für {{firstName}}.
 
-Lead-Details:
-- Score: {{leadScore}}/100
-- Antworten: {{responses}}
+Technical Assessment Score: {{leadScore}}/100 ({{leadQuality}})
+Campaign: {{campaignTitle}}
 
-Erstelle eine verkaufsfördernde Empfehlung:
+Technische Anforderungen:
+{{responses}}
 
-🔥 **Warum AI jetzt perfekt für Sie ist**
-[Urgency und Relevanz schaffen]
+Entwickle eine detaillierte technische Roadmap:
 
-💰 **Ihr ROI-Potenzial**
-[Konkrete Zahlen und Einsparungen]
+## 🔍 Current State Analysis
+[Tech Stack Bewertung und Gap-Analyse]
 
-⏰ **Exklusive Chance**
-[Begrenzte Angebote oder Termine]
+## 🏗 Recommended Architecture
+[Konkrete Architektur-Diagramme und Stack-Empfehlungen]
 
-📞 **Ihr nächster Schritt**
-[Klarer Call-to-Action]
+## 🛠 Implementation Stack
+- LLM Integration: [Specific models & APIs]
+- Vector Databases: [Pinecone/Weaviate/etc.]
+- Orchestration: [LangChain/LlamaIndex]
+- Infrastructure: [Cloud/On-Prem recommendations]
 
-🎁 **Bonus für schnelle Entscheider**
-[Incentive für sofortige Aktion]
+## 📊 Performance Metrics & Benchmarks
+[Expected latency, throughput, costs]
 
-Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber verkaufsstark.`
+## 🚀 MVP in 30 Tagen
+[Sprint-Plan mit konkreten Deliverables]
+
+## 💻 Code Snippets & Boilerplates
+[Starter code für quick implementation]
+
+Schreibe technisch präzise, mit Code-Beispielen und konkreten Tool-Empfehlungen.`
+          },
+          'campaign-optimizer': {
+            name: '🎯 Campaign Optimizer',
+            description: 'Optimiert bestehende Campaign-Konfigurationen',
+            template: `Analysiere und optimiere diese Campaign-Konfiguration:
+
+Aktuelle Campaign:
+{{campaignGoal}}
+
+Performance-Ziele:
+- Höhere Lead-Qualität
+- Bessere Conversion
+- Präziseres Scoring
+
+AKTUELLE KONFIGURATION:
+{{responses}}
+
+Erstelle eine OPTIMIERTE Version mit:
+
+1. **Fragenoptimierung**
+   - Welche Fragen fehlen für bessere Qualifizierung?
+   - Welche Fragen können gestrichen werden?
+   - Bessere Formulierungen für höhere Completion-Rate
+
+2. **Scoring-Verbesserung**
+   - Präzisere Scoring-Rules
+   - Neue Conditional Logic für bessere Segmentierung
+   - Lead-Quality Thresholds anpassen
+
+3. **UX-Optimierungen**
+   - Optimale Fragen-Reihenfolge
+   - Conditional Logic für personalisiertes Erlebnis
+   - Micro-Copy Verbesserungen
+
+Gib die optimierte Konfiguration als VOLLSTÄNDIGES JSON aus.`
           }
         };
 
