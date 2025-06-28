@@ -194,51 +194,27 @@ module.exports = [
           ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         }
 
-        // REDIRECT TO SLUG-BASED ROUTE - MUCH SIMPLER FIX
-        strapi.log.info(`🔄 ID route ${id} → redirecting to slug route`);
+        // SIMPLE DIRECT PROCESSING - NO COMPLEX REDIRECT
+        strapi.log.info(`💥 DIRECT processing for campaign ID: ${id}`);
         
-        // Find campaign by ID to get slug
-        const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
-          filters: { id: parseInt(id) },
-          fields: ['slug']
+        // Just process the lead directly with the ID - skip all the lookup mess
+        const lead = await strapi.service('api::lead.lead').processLeadSubmission({
+          firstName,
+          email,
+          responses: responses || {},
+          campaign: parseInt(id)
         });
-        
-        if (!campaigns || campaigns.length === 0) {
-          ctx.status = 404;
-          ctx.body = { error: 'Campaign not found' };
-          return;
-        }
-        
-        const slug = campaigns[0].slug;
-        strapi.log.info(`🔄 Redirecting ID ${id} → slug '${slug}'`);
-        
-        // Internal redirect to slug route by calling the slug handler
-        const slugHandler = require('./index.js').find(route => 
-          route.path === '/campaigns/:slug/submit' && route.method === 'POST'
-        );
-        
-        if (slugHandler) {
-          // Modify params for slug handler
-          ctx.params = { slug };
-          await slugHandler.handler(ctx);
-        } else {
-          // Fallback: direct processing
-          const lead = await strapi.service('api::lead.lead').processLeadSubmission({
-            firstName,
-            email,
-            responses: responses || {},
-            campaign: parseInt(id)
-          });
 
-          ctx.body = { 
-            data: {
-              id: lead.id,
-              leadScore: lead.leadScore,
-              leadQuality: lead.leadQuality,
-              message: 'Lead submitted successfully (via ID route)'
-            }
-          };
-        }
+        strapi.log.info(`✅ Lead submitted successfully: ${email} to campaign ID ${id}`);
+
+        ctx.body = { 
+          data: {
+            id: lead.id,
+            leadScore: lead.leadScore,
+            leadQuality: lead.leadQuality,
+            message: 'Lead submitted successfully'
+          }
+        };
         
       } catch (error) {
         strapi.log.error('Error in ID route redirect:', error);
