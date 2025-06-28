@@ -206,10 +206,11 @@ class QueueService {
       jobId: 1,
       processors: new Map(),
       isInMemory: true,
+      paused: false,
 
       async add(jobType, data, jobOptions = {}) {
         const job = {
-          id: this.jobId++,
+          id: inMemoryQueue.jobId++,
           type: jobType,
           data,
           options: jobOptions,
@@ -219,28 +220,30 @@ class QueueService {
           maxAttempts: jobOptions.attempts || options.defaultJobOptions?.attempts || 3
         };
 
-        this.jobs.set(job.id, job);
+        inMemoryQueue.jobs.set(job.id, job);
         
-        // Process immediately in next tick
-        setImmediate(() => this.processJob(job));
+        // Process immediately in next tick (unless paused)
+        if (!inMemoryQueue.paused) {
+          setImmediate(() => inMemoryQueue.processJob(job));
+        }
         
         return job;
       },
 
       process(jobType, concurrency, processor) {
-        this.processors.set(jobType, processor);
+        inMemoryQueue.processors.set(jobType, processor);
       },
 
       async processJob(job) {
         try {
           job.status = 'active';
-          const processor = this.processors.get(job.type);
+          const processor = inMemoryQueue.processors.get(job.type);
           
           if (processor) {
             const result = await processor(job);
             job.status = 'completed';
             job.result = result;
-            this.strapi.log.info(`✅ In-memory job completed: ${name}:${job.id}`);
+            strapi.log.info(`✅ In-memory job completed: ${name}:${job.id}`);
           } else {
             throw new Error(`No processor found for job type: ${job.type}`);
           }
@@ -250,31 +253,33 @@ class QueueService {
           
           if (job.attempts >= job.maxAttempts) {
             job.status = 'failed';
-            this.strapi.log.error(`❌ In-memory job failed: ${name}:${job.id} - ${error.message}`);
+            strapi.log.error(`❌ In-memory job failed: ${name}:${job.id} - ${error.message}`);
           } else {
             job.status = 'waiting';
-            // Retry after delay
+            // Retry after delay (unless paused)
             const delay = Math.pow(2, job.attempts) * 1000; // Exponential backoff
-            setTimeout(() => this.processJob(job), delay);
-            this.strapi.log.warn(`⚠️ Retrying in-memory job: ${name}:${job.id} (attempt ${job.attempts})`);
+            if (!inMemoryQueue.paused) {
+              setTimeout(() => inMemoryQueue.processJob(job), delay);
+            }
+            strapi.log.warn(`⚠️ Retrying in-memory job: ${name}:${job.id} (attempt ${job.attempts})`);
           }
         }
       },
 
       async getWaiting() {
-        return Array.from(this.jobs.values()).filter(job => job.status === 'waiting');
+        return Array.from(inMemoryQueue.jobs.values()).filter(job => job.status === 'waiting');
       },
 
       async getActive() {
-        return Array.from(this.jobs.values()).filter(job => job.status === 'active');
+        return Array.from(inMemoryQueue.jobs.values()).filter(job => job.status === 'active');
       },
 
       async getCompleted() {
-        return Array.from(this.jobs.values()).filter(job => job.status === 'completed');
+        return Array.from(inMemoryQueue.jobs.values()).filter(job => job.status === 'completed');
       },
 
       async getFailed() {
-        return Array.from(this.jobs.values()).filter(job => job.status === 'failed');
+        return Array.from(inMemoryQueue.jobs.values()).filter(job => job.status === 'failed');
       },
 
       async getDelayed() {
@@ -282,25 +287,25 @@ class QueueService {
       },
 
       async pause() {
-        this.paused = true;
+        inMemoryQueue.paused = true;
       },
 
       async resume() {
-        this.paused = false;
+        inMemoryQueue.paused = false;
       },
 
       async close() {
-        this.jobs.clear();
-        this.processors.clear();
+        inMemoryQueue.jobs.clear();
+        inMemoryQueue.processors.clear();
       },
 
       async clean(grace, type) {
         const now = Date.now();
         const removed = [];
         
-        this.jobs.forEach((job, id) => {
+        inMemoryQueue.jobs.forEach((job, id) => {
           if (job.status === type && (now - job.createdAt.getTime()) > grace) {
-            this.jobs.delete(id);
+            inMemoryQueue.jobs.delete(id);
             removed.push(job);
           }
         });
