@@ -1,0 +1,74 @@
+{
+  "startTime": "2025-06-28T19:18:38.602Z",
+  "tests": [
+    {
+      "name": "Backend Health Check",
+      "passed": true,
+      "details": "Backend responding - AI providers configured",
+      "duration": 104,
+      "timestamp": "2025-06-28T19:18:38.708Z"
+    },
+    {
+      "name": "Frontend Connectivity",
+      "passed": true,
+      "details": "Frontend responding (401) at https://aiex-quiz-platform-519nmqcf0-cubetribes-projects.vercel.app",
+      "duration": 4148,
+      "timestamp": "2025-06-28T19:18:42.856Z"
+    },
+    {
+      "name": "Queue System Status",
+      "passed": true,
+      "details": "Queue active - Jobs: 0, Redis: In-Memory Fallback",
+      "duration": 32,
+      "timestamp": "2025-06-28T19:18:42.889Z"
+    },
+    {
+      "name": "AI Providers Status",
+      "passed": true,
+      "details": "AI providers active: openai, anthropic, gemini",
+      "duration": 35,
+      "timestamp": "2025-06-28T19:18:42.925Z"
+    },
+    {
+      "name": "Campaign Retrieval",
+      "passed": true,
+      "details": "Found 2 campaigns, testing: test2",
+      "duration": 30,
+      "timestamp": "2025-06-28T19:18:42.955Z"
+    },
+    {
+      "name": "Campaign Details (test3)",
+      "passed": true,
+      "details": "Campaign loaded - Type: quiz, Questions: 2",
+      "duration": 40,
+      "timestamp": "2025-06-28T19:18:42.995Z"
+    },
+    {
+      "name": "Lead Submission (Slug Route)",
+      "passed": true,
+      "details": "Lead created via slug: 46",
+      "duration": 89,
+      "timestamp": "2025-06-28T19:18:43.084Z"
+    },
+    {
+      "name": "AI Processing",
+      "passed": true,
+      "details": "AI processing completed - Score: 66, Quality: warm, Result length: 373 chars",
+      "duration": 34,
+      "timestamp": "2025-06-28T19:18:43.119Z"
+    },
+    {
+      "name": "Email Delivery",
+      "passed": true,
+      "details": "Email system active (verify manually at test@cubetribe.de)",
+      "duration": 4242,
+      "timestamp": "2025-06-28T19:18:47.361Z"
+    }
+  ],
+  "summary": {
+    "total": 9,
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  }
+}

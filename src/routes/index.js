@@ -1601,4 +1601,31 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
       auth: false,
     },
   },
+  
+  // Favicon route fix
+  {
+    method: 'GET',
+    path: '/favicon.ico',
+    handler: async (ctx) => {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        
+        const faviconPath = path.join(process.cwd(), 'public', 'favicon.ico');
+        
+        if (fs.existsSync(faviconPath)) {
+          ctx.type = 'image/x-icon';
+          ctx.body = fs.readFileSync(faviconPath);
+        } else {
+          ctx.status = 204; // No content instead of 500
+        }
+      } catch (error) {
+        strapi.log.warn('Favicon not found:', error);
+        ctx.status = 204; // No content instead of error
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
 ];

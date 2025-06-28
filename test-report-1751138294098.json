@@ -1,0 +1,67 @@
+{
+  "startTime": "2025-06-28T19:17:22.571Z",
+  "tests": [
+    {
+      "name": "Backend Health Check",
+      "passed": true,
+      "details": "Backend responding - AI providers configured",
+      "duration": 257,
+      "timestamp": "2025-06-28T19:17:22.829Z"
+    },
+    {
+      "name": "Frontend Connectivity",
+      "passed": true,
+      "details": "Frontend responding (401) at https://aiex-quiz-platform-519nmqcf0-cubetribes-projects.vercel.app",
+      "duration": 4208,
+      "timestamp": "2025-06-28T19:17:27.037Z"
+    },
+    {
+      "name": "Queue System Status",
+      "passed": true,
+      "details": "Queue active - Jobs: 0, Redis: In-Memory Fallback",
+      "duration": 34,
+      "timestamp": "2025-06-28T19:17:27.071Z"
+    },
+    {
+      "name": "AI Providers Status",
+      "passed": true,
+      "details": "AI providers active: openai, anthropic, gemini",
+      "duration": 31,
+      "timestamp": "2025-06-28T19:17:27.102Z"
+    },
+    {
+      "name": "Campaign Retrieval",
+      "passed": true,
+      "details": "Found 2 campaigns, testing: test2",
+      "duration": 36,
+      "timestamp": "2025-06-28T19:17:27.139Z"
+    },
+    {
+      "name": "Campaign Details (test3)",
+      "passed": true,
+      "details": "Campaign loaded - Type: quiz, Questions: 2",
+      "duration": 39,
+      "timestamp": "2025-06-28T19:17:27.179Z"
+    },
+    {
+      "name": "Lead Submission (Slug Route)",
+      "passed": true,
+      "details": "Lead created via slug: 45",
+      "duration": 93,
+      "timestamp": "2025-06-28T19:17:27.272Z"
+    },
+    {
+      "name": "AI Processing",
+      "passed": false,
+      "details": "AI processing timeout after 45000ms",
+      "duration": 46824,
+      "timestamp": "2025-06-28T19:18:14.097Z"
+    }
+  ],
+  "summary": {
+    "total": 8,
+    "passed": 7,
+    "failed": 1,
+    "skipped": 0
+  }
+}

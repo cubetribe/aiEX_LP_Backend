@@ -278,14 +278,14 @@ const testAIProcessing = async (leadId, maxWaitTime = 45000) => {
       const data = await response.json();
       const lead = data.data;
       
-      log(`Lead ${leadId} status: ${lead.aiProcessingStatus} (attempt ${attempts + 1}/${maxAttempts})`);
+      log(`Lead ${leadId} status: ${lead.status || lead.aiProcessingStatus} (attempt ${attempts + 1}/${maxAttempts})`);
       
-      if (lead.aiProcessingStatus === 'completed' && lead.aiResult) {
+      if ((lead.status === 'completed' || lead.aiProcessingStatus === 'completed') && lead.aiResult) {
         const duration = Date.now() - startTime;
         const details = `AI processing completed - Score: ${lead.leadScore}, Quality: ${lead.leadQuality}, Result length: ${lead.aiResult.length} chars`;
         addTestResult(testName, true, details, duration);
         return lead;
-      } else if (lead.aiProcessingStatus === 'failed') {
+      } else if (lead.status === 'failed' || lead.aiProcessingStatus === 'failed') {
         addTestResult(testName, false, `AI processing failed for lead ${leadId}`, Date.now() - startTime);
         return false;
       }
