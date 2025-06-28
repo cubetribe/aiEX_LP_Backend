@@ -15,6 +15,14 @@ module.exports = {
     } catch (error) {
       strapi.log.error('❌ Error initializing AI services:', error);
     }
+
+    // Initialize Email Service
+    try {
+      const emailService = require('./services/email.service');
+      strapi.log.info('✅ Email Service initialized');
+    } catch (error) {
+      strapi.log.error('❌ Error initializing Email service:', error);
+    }
     
     // Register custom routes
     try {

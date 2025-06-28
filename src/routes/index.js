@@ -1214,4 +1214,46 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
       auth: false,
     },
   },
+  {
+    method: 'POST',
+    path: '/email/test',
+    handler: async (ctx) => {
+      try {
+        const { to, subject, content } = ctx.request.body;
+        
+        if (!to || !subject || !content) {
+          ctx.status = 400;
+          ctx.body = { error: 'Missing required fields: to, subject, content' };
+          return;
+        }
+
+        const emailService = require('../services/email.service');
+        
+        const result = await emailService.sendEmail({
+          to,
+          subject,
+          text: content,
+          html: `<p>${content}</p>`
+        });
+
+        ctx.body = {
+          success: true,
+          message: 'Test email sent successfully',
+          data: result
+        };
+        
+      } catch (error) {
+        strapi.log.error('Error sending test email:', error);
+        ctx.status = 500;
+        ctx.body = { 
+          success: false,
+          error: 'Failed to send test email',
+          details: error.message 
+        };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
 ];
