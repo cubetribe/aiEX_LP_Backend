@@ -96,48 +96,76 @@ module.exports = {
     
     // VALIDATE CONFIG JSON ON UPDATE
     if (data.config !== undefined) {
+      // If config is null, skip validation (allows clearing config)
+      if (data.config === null) {
+        strapi.log.info('Config set to null, skipping validation');
+        return;
+      }
+      
       // If config is being updated
       if (data.config && typeof data.config === 'object') {
-        // For partial updates from admin panel, always merge with existing
-        const mergedConfig = {
-          ...(existingCampaign.config || {}),
-          ...data.config
-        };
+        // Check if this is a partial update (admin panel typically sends partial updates)
+        const isPartialUpdate = !data.config.type && !data.config.title && !data.config.questions;
         
-        // Ensure required fields from existing campaign are preserved
-        if (campaignType === 'quiz' && existingCampaign.config) {
-          // Preserve title and questions if not in update
-          if (!data.config.title && existingCampaign.config.title) {
-            mergedConfig.title = existingCampaign.config.title;
-          }
-          if (!data.config.questions && existingCampaign.config.questions) {
-            mergedConfig.questions = existingCampaign.config.questions;
-          }
-        }
-        
-        strapi.log.info('📋 Merged config for validation:', {
-          campaignType,
-          hasTitle: !!mergedConfig.title,
-          hasQuestions: !!mergedConfig.questions,
-          questionsCount: mergedConfig.questions?.length || 0
-        });
-        
-        const validation = validateCampaignConfig(mergedConfig, campaignType);
-        
-        if (!validation.success) {
-          const errorMessages = validation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
-          strapi.log.error('❌ Campaign validation failed:', {
-            errors: validation.errors,
-            mergedConfig
+        if (isPartialUpdate && existingCampaign.config) {
+          // For partial updates, merge with existing config
+          const mergedConfig = {
+            ...(existingCampaign.config || {}),
+            ...data.config
+          };
+          
+          strapi.log.info('📋 Handling partial update, merged config:', {
+            campaignType,
+            hasTitle: !!mergedConfig.title,
+            hasQuestions: !!mergedConfig.questions,
+            questionsCount: mergedConfig.questions?.length || 0,
+            updateKeys: Object.keys(data.config),
+            isPartialUpdate: true
           });
-          const error = new Error(`Campaign configuration validation failed: ${errorMessages}`);
-          error.details = validation.errors;
-          throw error;
+          
+          // Only validate if we have a complete config structure
+          if (mergedConfig.title || mergedConfig.questions) {
+            const validation = validateCampaignConfig(mergedConfig, campaignType);
+            
+            if (!validation.success) {
+              const errorMessages = validation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
+              strapi.log.error('❌ Campaign validation failed:', {
+                errors: validation.errors,
+                mergedConfig
+              });
+              const error = new Error(`Campaign configuration validation failed: ${errorMessages}`);
+              error.details = validation.errors;
+              throw error;
+            }
+            
+            // Use merged config to preserve all fields
+            data.config = mergedConfig;
+          } else {
+            // If no title or questions in merged config, just apply the update without validation
+            strapi.log.info('⚠️ Partial update without core fields, applying without validation');
+          }
+        } else {
+          // Full config update - validate as normal
+          strapi.log.info('📋 Full config update detected');
+          
+          const validation = validateCampaignConfig(data.config, campaignType);
+          
+          if (!validation.success) {
+            const errorMessages = validation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
+            strapi.log.error('❌ Campaign validation failed:', {
+              errors: validation.errors,
+              config: data.config
+            });
+            const error = new Error(`Campaign configuration validation failed: ${errorMessages}`);
+            error.details = validation.errors;
+            throw error;
+          }
+          
+          // Use validated config
+          data.config = validation.data;
         }
         
-        // Use merged config to preserve all fields
-        data.config = mergedConfig;
-        strapi.log.info(`✅ Campaign config validated for update: ${campaignType}`);
+        strapi.log.info(`✅ Campaign config processed for update: ${campaignType}`);
       }
     }
     
@@ -181,18 +209,17 @@ module.exports = {
     strapi.log.info(`Campaign updated: ${result.title} (${result.slug})`);
     
     // Validate AI model matches provider
-    if (result.aiModel && result.aiProvider !== 'auto') {
+    if (result.aiModel && result.aiProvider && result.aiProvider !== 'auto') {
       const modelProviderMap = {
-        'gpt-4.5': 'chatgpt',
-        'gpt-4.1': 'chatgpt',
-        'gpt-4o': 'chatgpt',
-        'gpt-4o-mini': 'chatgpt', 
-        'gpt-4-turbo': 'chatgpt',
-        'gpt-3.5-turbo': 'chatgpt',
-        'claude-opus-3.7': 'anthropic',
-        'claude-sonnet-3.7': 'anthropic',
-        'gemini-2.5-pro': 'gemini',
-        'gemini-2.5-flash': 'gemini'
+        'gpt-4o': 'openai',
+        'gpt-4o-mini': 'openai', 
+        'gpt-4-turbo': 'openai',
+        'gpt-3.5-turbo': 'openai',
+        'claude-3-opus': 'anthropic',
+        'claude-3-sonnet': 'anthropic',
+        'claude-3-haiku': 'anthropic',
+        'gemini-1.5-pro': 'gemini',
+        'gemini-1.5-flash': 'gemini'
       };
       
       const expectedProvider = modelProviderMap[result.aiModel];
