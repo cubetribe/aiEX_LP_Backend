@@ -35,17 +35,17 @@ class EmailService {
       // Create transporter based on provider
       this.transporter = await this.createTransporter(emailConfig);
       
-      // Verify connection with detailed error handling
+      // Mark as configured if transporter exists - skip verification
       if (this.transporter) {
+        this.isConfigured = true;
+        strapi.log.info(`⚡ Email service configured with ${emailConfig.provider} (verification skipped)`);
+        
+        // Optional verification attempt (non-blocking)
         try {
           await this.transporter.verify();
-          this.isConfigured = true;
-          strapi.log.info(`✅ Email service initialized successfully with ${emailConfig.provider}`);
+          strapi.log.info(`✅ Email verification successful`);
         } catch (verifyError) {
-          strapi.log.warn('⚠️ Email transporter created but verification failed:', verifyError.message);
-          // Still mark as configured for testing - verification might fail due to network issues
-          this.isConfigured = true;
-          strapi.log.info(`⚡ Email service marked as configured despite verification warning`);
+          strapi.log.warn('⚠️ Email verification failed (non-critical):', verifyError.message);
         }
       }
     } catch (error) {
