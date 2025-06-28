@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Result Display Flow</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        pre { background-color: #f5f5f5; padding: 10px; overflow-x: auto; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Frontend Result Display Debug Test</h1>
+    
+    <div class="step">
+        <h3>1. Test Backend APIs</h3>
+        <button onclick="testLeadStatus()">Test Lead Status</button>
+        <button onclick="testLeadResult()">Test Lead Result</button>
+        <div id="backend-result"></div>
+    </div>
+    
+    <div class="step">
+        <h3>2. Test Frontend API Function</h3>
+        <button onclick="testFrontendAPI()">Test getFormattedResult()</button>
+        <div id="frontend-api-result"></div>
+    </div>
+    
+    <div class="step">
+        <h3>3. Instructions</h3>
+        <p>To test the full flow:</p>
+        <ol>
+            <li>Go to: <a href="https://aiex-quiz-platform-8uaqdy5rv-cubetribes-projects.vercel.app/campaign/test-quiz?debug=true" target="_blank">Test Quiz with Debug Mode</a></li>
+            <li>Complete the quiz and submit lead</li>
+            <li>Watch the browser console for debug logs</li>
+            <li>Check if the debug info box shows the correct state</li>
+            <li>Verify if the result displays after processing</li>
+        </ol>
+    </div>
+
+    <script>
+        const API_BASE = 'https://web-production-6df54.up.railway.app';
+        const LEAD_ID = '11'; // Known completed lead
+        
+        async function testLeadStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/leads/${LEAD_ID}/status`);
+                const data = await response.json();
+                document.getElementById('backend-result').innerHTML = `
+                    <div class="success">
+                        <h4>✅ Lead Status API Success</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('backend-result').innerHTML = `
+                    <div class="error">
+                        <h4>❌ Lead Status API Error</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testLeadResult() {
+            try {
+                const response = await fetch(`${API_BASE}/leads/${LEAD_ID}/result`);
+                const data = await response.json();
+                document.getElementById('backend-result').innerHTML = `
+                    <div class="success">
+                        <h4>✅ Lead Result API Success</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('backend-result').innerHTML = `
+                    <div class="error">
+                        <h4>❌ Lead Result API Error</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testFrontendAPI() {
+            try {
+                // Simulate the frontend API function
+                const response = await fetch(`${API_BASE}/leads/${LEAD_ID}/result`);
+                const responseData = await response.json();
+                
+                if (!responseData.data || !responseData.data.aiResult) {
+                    throw new Error('Results not ready yet');
+                }
+                
+                // Extract the FormattedResult from the aiResult field and merge important metadata
+                const resultData = responseData.data;
+                const formattedResult = {
+                    ...resultData.aiResult,
+                    canShowResult: resultData.canShowResult,
+                    resultDeliveryMode: resultData.resultDeliveryMode,
+                };
+                
+                document.getElementById('frontend-api-result').innerHTML = `
+                    <div class="success">
+                        <h4>✅ Frontend getFormattedResult() Success</h4>
+                        <p><strong>Structure Check:</strong></p>
+                        <ul>
+                            <li>title: ${formattedResult.title ? '✅' : '❌'}</li>
+                            <li>summary: ${formattedResult.summary ? '✅' : '❌'}</li>
+                            <li>sections: ${formattedResult.sections ? '✅' : '❌'}</li>
+                            <li>canShowResult: ${formattedResult.canShowResult ? '✅' : '❌'}</li>
+                        </ul>
+                        <pre>${JSON.stringify(formattedResult, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('frontend-api-result').innerHTML = `
+                    <div class="error">
+                        <h4>❌ Frontend API Test Error</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
