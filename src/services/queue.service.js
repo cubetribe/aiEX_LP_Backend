@@ -439,8 +439,10 @@ class QueueService {
       
       // Fallback to immediate processing if queue fails
       try {
-        this.strapi.log.warn('🔄 Falling back to immediate AI processing');
-        const result = await this.processAIJob({ data });
+        this.strapi.log.warn('🔄 Falling back to immediate AI processing via lead service');
+        const leadService = this.strapi.service('api::lead.lead');
+        const result = await leadService.processLeadWithAI(data.leadId);
+        this.strapi.log.info(`✅ Immediate fallback processing completed for lead ${data.leadId}`);
         return { id: 'immediate', result, immediate: true };
       } catch (fallbackError) {
         this.strapi.log.error('❌ Immediate processing also failed:', fallbackError);
@@ -926,6 +928,12 @@ class QueueService {
    */
   ensureInitialized() {
     if (!this.isInitialized) {
+      this.strapi.log.error('🚨 Queue service NOT initialized - this is the root cause!');
+      this.strapi.log.error('🔍 Queue state:', {
+        isInitialized: this.isInitialized,
+        queuesCount: this.queues.size,
+        queuesKeys: Array.from(this.queues.keys())
+      });
       throw new Error('Queue service is not initialized. Call initialize() first.');
     }
   }

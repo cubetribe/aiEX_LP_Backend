@@ -31,15 +31,18 @@ module.exports = {
       const QueueService = require('./services/queue.service');
       const queueService = new QueueService(strapi);
       
-      // Store queue service in strapi for global access
-      strapi.queueService = queueService;
-      
-      // Initialize queue service
+      // Initialize queue service BEFORE storing it
       await queueService.initialize();
-      strapi.log.info('✅ Queue Service initialized successfully');
+      
+      // Only store queue service in strapi if initialization was successful
+      strapi.queueService = queueService;
+      strapi.log.info('✅ Queue Service initialized and attached successfully');
+      strapi.log.info(`🔍 Queue Service status: isInitialized=${queueService.isInitialized}, queues=${queueService.queues.size}`);
     } catch (error) {
       strapi.log.error('❌ Error initializing Queue service:', error);
       strapi.log.warn('⚠️ Queue service disabled - continuing without background jobs');
+      // Ensure queueService is not attached if initialization failed
+      strapi.queueService = null;
     }
     
     // Register custom routes

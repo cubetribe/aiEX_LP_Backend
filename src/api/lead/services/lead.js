@@ -117,10 +117,11 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
       strapi.log.info(`🔍 Debug - condition check: deliveryMode !== 'show_only' = ${deliveryMode !== 'show_only'}, resultConfig.showOnScreen = ${resultConfig.showOnScreen}`);
       strapi.log.info(`🔍 Debug - queueService available: ${!!strapi.queueService}`);
 
-      // Queue AI processing job
+      // Queue AI processing job with fallback to immediate processing
       if (deliveryMode !== 'show_only' || resultConfig.showOnScreen) {
         strapi.log.info(`🎯 About to queue AI processing job for lead ${lead.id}`);
         try {
+          // Try queue first
           await strapi.queueService.addAIProcessingJob({
             leadId: lead.id,
             campaignId: campaignData.id
@@ -129,8 +130,27 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
           });
           strapi.log.info(`✅ AI processing job queued successfully for lead ${lead.id}`);
         } catch (aiJobError) {
-          strapi.log.error(`❌ Failed to queue AI processing job for lead ${lead.id}:`, aiJobError);
-          throw aiJobError;
+          strapi.log.warn(`⚠️ Queue failed for lead ${lead.id}, falling back to immediate processing:`, aiJobError);
+          
+          // FALLBACK: Process immediately when queue fails
+          try {
+            strapi.log.info(`🔄 Starting immediate AI processing for lead ${lead.id}`);
+            const processedLead = await this.processLeadWithAI(lead.id);
+            strapi.log.info(`✅ Immediate AI processing completed for lead ${lead.id}`);
+            
+            // Send email if configured
+            if (deliveryMode === 'show_and_email' || deliveryMode === 'email_only') {
+              try {
+                await strapi.emailService.sendLeadResult(processedLead);
+                strapi.log.info(`📧 Email sent for lead ${lead.id}`);
+              } catch (emailError) {
+                strapi.log.error(`📧 Email failed for lead ${lead.id}:`, emailError);
+              }
+            }
+          } catch (immediateError) {
+            strapi.log.error(`❌ Immediate processing also failed for lead ${lead.id}:`, immediateError);
+            // Don't throw - let the lead exist in pending state for manual reprocess
+          }
         }
       } else {
         strapi.log.info(`⏭️ Skipping AI processing job for lead ${lead.id} - condition not met`);
