@@ -210,14 +210,14 @@ module.exports = [
 
         const campaign = await strapi.entityService.findOne('api::campaign.campaign', parseInt(id));
 
-        if (!campaign || !campaign.is_active) {
+        if (!campaign || !campaign.isActive) {
           ctx.status = 404;
           ctx.body = { 
             error: 'Campaign not found or inactive',
             debug: { 
               id, 
               found: !!campaign, 
-              isActive: campaign?.is_active,
+              isActive: campaign?.isActive,
               status: campaign?.status 
             }
           };
