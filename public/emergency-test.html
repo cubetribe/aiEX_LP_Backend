@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoAIX Emergency Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+        .box { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .error { color: #dc3545; background: #f8d7da; border-color: #f5c6cb; }
+        .success { color: #155724; background: #d4edda; border-color: #c3e6cb; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        pre { background: #f1f1f1; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 11px; }
+    </style>
+</head>
+<body>
+    <h1>🚨 GoAIX Emergency Test</h1>
+    
+    <div class="box">
+        <h2>🔧 Manual API Tests</h2>
+        <button onclick="testStatus()">Test Lead 18 Status</button>
+        <button onclick="testResult()">Test Lead 18 Result</button>
+        <button onclick="testCampaign()">Test Campaign Submit</button>
+        <div id="results"></div>
+    </div>
+
+    <div class="box">
+        <h2>📋 Lead 18 Status</h2>
+        <div id="status">Loading...</div>
+    </div>
+
+    <div class="box">
+        <h2>🎯 AI Result</h2>
+        <div id="airesult">Loading...</div>
+    </div>
+
+    <script>
+        const API = 'https://web-production-6df54.up.railway.app';
+        
+        async function apiCall(url, options = {}) {
+            try {
+                const response = await fetch(url, options);
+                return await response.json();
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+
+        async function testStatus() {
+            const result = await apiCall(`${API}/leads/18/status`);
+            document.getElementById('results').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+        }
+
+        async function testResult() {
+            const result = await apiCall(`${API}/leads/18/result`);
+            document.getElementById('results').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+        }
+
+        async function testCampaign() {
+            const result = await apiCall(`${API}/campaigns/2/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ firstName: 'Test', email: 'test@test.com', responses: { q1: 'Ja' } })
+            });
+            document.getElementById('results').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+        }
+
+        async function loadStatus() {
+            const result = await apiCall(`${API}/leads/18/status`);
+            if (result.success) {
+                const lead = result.data;
+                document.getElementById('status').innerHTML = `
+                    <div class="success">
+                        ✅ Status: ${lead.status} | Progress: ${lead.progress}% | Score: ${lead.leadScore}
+                    </div>
+                `;
+                if (lead.status === 'completed') loadAIResult();
+            } else {
+                document.getElementById('status').innerHTML = `<div class="error">❌ ${result.error}</div>`;
+            }
+        }
+
+        async function loadAIResult() {
+            const result = await apiCall(`${API}/leads/18/result`);
+            if (result.data && result.data.aiResult) {
+                const ai = result.data.aiResult;
+                document.getElementById('airesult').innerHTML = `
+                    <div class="success">
+                        <h3>${ai.title}</h3>
+                        <p><em>${ai.summary}</em></p>
+                        ${ai.sections.map(s => `<h4>${s.title}</h4><div style="white-space: pre-wrap;">${s.content}</div>`).join('')}
+                    </div>
+                `;
+            } else {
+                document.getElementById('airesult').innerHTML = `<div class="error">❌ No AI result available</div>`;
+            }
+        }
+
+        window.onload = loadStatus;
+    </script>
+</body>
+</html>

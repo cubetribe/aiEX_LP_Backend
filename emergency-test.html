@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoAIX Emergency Test - Lead 18 Result</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .result-box { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .loading { text-align: center; padding: 20px; }
+        .error { color: #dc3545; background: #f8d7da; border: 1px solid #f5c6cb; }
+        .success { color: #155724; background: #d4edda; border: 1px solid #c3e6cb; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🚨 GoAIX Emergency Test System</h1>
+    <p><strong>Status:</strong> Testing Lead 18 Result Display</p>
+    
+    <div class="result-box">
+        <h2>🔧 Backend API Tests</h2>
+        <button onclick="testLeadStatus()">Test Lead 18 Status</button>
+        <button onclick="testLeadResult()">Test Lead 18 Result</button>
+        <button onclick="testCampaignSubmit()">Test Campaign Submit</button>
+        <div id="api-results"></div>
+    </div>
+
+    <div class="result-box">
+        <h2>📋 Lead 18 Information</h2>
+        <div id="lead-info" class="loading">Loading Lead 18 data...</div>
+    </div>
+
+    <div class="result-box">
+        <h2>🎯 AI Result Display</h2>
+        <div id="ai-result" class="loading">Loading AI analysis...</div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://web-production-6df54.up.railway.app';
+        
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                const data = await response.json();
+                return { success: response.ok, status: response.status, data };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function testLeadStatus() {
+            const result = await makeRequest(`${API_BASE}/leads/18/status`);
+            document.getElementById('api-results').innerHTML = `
+                <h3>Lead 18 Status Result:</h3>
+                <pre>${JSON.stringify(result, null, 2)}</pre>
+            `;
+        }
+
+        async function testLeadResult() {
+            const result = await makeRequest(`${API_BASE}/leads/18/result`);
+            document.getElementById('api-results').innerHTML = `
+                <h3>Lead 18 Result API:</h3>
+                <pre>${JSON.stringify(result, null, 2)}</pre>
+            `;
+        }
+
+        async function testCampaignSubmit() {
+            const result = await makeRequest(`${API_BASE}/campaigns/2/submit`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    firstName: 'Emergency Test',
+                    email: 'emergency@test.com',
+                    responses: { testfrage_1: 'Ja' }
+                })
+            });
+            document.getElementById('api-results').innerHTML = `
+                <h3>Campaign 2 Submit Test:</h3>
+                <pre>${JSON.stringify(result, null, 2)}</pre>
+            `;
+        }
+
+        async function loadLeadInfo() {
+            const statusResult = await makeRequest(`${API_BASE}/leads/18/status`);
+            
+            if (statusResult.success) {
+                const lead = statusResult.data.data;
+                document.getElementById('lead-info').innerHTML = `
+                    <div class="success">
+                        <h3>✅ Lead 18 Status: ${lead.status}</h3>
+                        <p><strong>Progress:</strong> ${lead.progress}%</p>
+                        <p><strong>Step:</strong> ${lead.currentStep}</p>
+                        <p><strong>Score:</strong> ${lead.leadScore} (${lead.leadQuality})</p>
+                        <p><strong>Has AI Result:</strong> ${lead.aiResult ? 'Yes' : 'No'}</p>
+                    </div>
+                `;
+                
+                if (lead.status === 'completed' && lead.aiResult) {
+                    loadAIResult();
+                }
+            } else {
+                document.getElementById('lead-info').innerHTML = `
+                    <div class="error">
+                        <h3>❌ Error loading Lead 18</h3>
+                        <p>${statusResult.error || 'API request failed'}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadAIResult() {
+            const resultData = await makeRequest(`${API_BASE}/leads/18/result`);
+            
+            if (resultData.success && resultData.data.aiResult) {
+                const aiResult = resultData.data.aiResult;
+                
+                document.getElementById('ai-result').innerHTML = `
+                    <div class="success">
+                        <h3>🎯 ${aiResult.title}</h3>
+                        <p><em>${aiResult.summary}</em></p>
+                        
+                        ${aiResult.sections.map(section => `
+                            <div style="margin: 20px 0;">
+                                <h4>${section.title}</h4>
+                                <div style="white-space: pre-wrap; line-height: 1.6;">${section.content}</div>
+                            </div>
+                        `).join('')}
+                        
+                        <div style="margin-top: 20px; padding: 10px; background: #e3f2fd; border-radius: 4px;">
+                            <strong>Metadata:</strong>
+                            <ul>
+                                <li>Lead Score: ${aiResult.metadata.leadScore}</li>
+                                <li>Lead Quality: ${aiResult.metadata.leadQuality}</li>
+                                <li>AI Provider: ${aiResult.metadata.aiProvider}</li>
+                                <li>Confidence: ${(aiResult.metadata.confidence * 100).toFixed(1)}%</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('ai-result').innerHTML = `
+                    <div class="error">
+                        <h3>❌ Error loading AI Result</h3>
+                        <p>${resultData.error || 'Result not available'}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-load data when page loads
+        window.onload = function() {
+            loadLeadInfo();
+        };
+    </script>
+</body>
+</html>
