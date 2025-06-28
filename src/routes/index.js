@@ -194,58 +194,54 @@ module.exports = [
           ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         }
 
-        if (!firstName || !email) {
-          ctx.status = 400;
-          ctx.body = { error: 'firstName and email are required' };
+        // REDIRECT TO SLUG-BASED ROUTE - MUCH SIMPLER FIX
+        strapi.log.info(`🔄 ID route ${id} → redirecting to slug route`);
+        
+        // Find campaign by ID to get slug
+        const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
+          filters: { id: parseInt(id) },
+          fields: ['slug']
+        });
+        
+        if (!campaigns || campaigns.length === 0) {
+          ctx.status = 404;
+          ctx.body = { error: 'Campaign not found' };
           return;
         }
-
-        strapi.log.info(`🔍 Looking for campaign ID: ${id} (parsed: ${parseInt(id)})`);
         
-        // Try findMany as fallback to findOne
-        const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
-          filters: { id: parseInt(id) }
-        });
-        const campaign = campaigns && campaigns.length > 0 ? campaigns[0] : null;
+        const slug = campaigns[0].slug;
+        strapi.log.info(`🔄 Redirecting ID ${id} → slug '${slug}'`);
         
-        strapi.log.info(`🔍 Campaign found:`, campaign ? 'YES' : 'NO', campaign?.title);
+        // Internal redirect to slug route by calling the slug handler
+        const slugHandler = require('./index.js').find(route => 
+          route.path === '/campaigns/:slug/submit' && route.method === 'POST'
+        );
+        
+        if (slugHandler) {
+          // Modify params for slug handler
+          ctx.params = { slug };
+          await slugHandler.handler(ctx);
+        } else {
+          // Fallback: direct processing
+          const lead = await strapi.service('api::lead.lead').processLeadSubmission({
+            firstName,
+            email,
+            responses: responses || {},
+            campaign: parseInt(id)
+          });
 
-        if (!campaign) {
-          strapi.log.error(`❌ Campaign ${id} not found in database`);
-          ctx.status = 404;
           ctx.body = { 
-            error: 'Campaign not found or inactive',
-            debug: { 
-              id, 
-              parsedId: parseInt(id),
-              found: !!campaign, 
-              isActive: campaign?.isActive,
-              status: campaign?.status,
-              campaignData: campaign 
+            data: {
+              id: lead.id,
+              leadScore: lead.leadScore,
+              leadQuality: lead.leadQuality,
+              message: 'Lead submitted successfully (via ID route)'
             }
           };
-          return;
         }
-
-        const lead = await strapi.service('api::lead.lead').processLeadSubmission({
-          firstName,
-          email,
-          responses: responses || {},
-          campaign: campaign.id
-        });
-
-        strapi.log.info(`Lead submitted: ${email} to campaign ID ${id}`);
-
-        ctx.body = { 
-          data: {
-            id: lead.id,
-            leadScore: lead.leadScore,
-            leadQuality: lead.leadQuality,
-            message: 'Lead submitted successfully'
-          }
-        };
+        
       } catch (error) {
-        strapi.log.error('Error submitting lead by ID:', error);
+        strapi.log.error('Error in ID route redirect:', error);
         ctx.status = 500;
         ctx.body = { error: 'Failed to submit lead' };
       }
