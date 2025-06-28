@@ -23,41 +23,8 @@ export default {
   bootstrap(app) {
     console.log('GoAIX Admin Panel Bootstrap');
     
-    // Register admin extensions
-    try {
-      // Import and register Prompt Tester
-      import('./extensions/prompt-tester.js').then(module => {
-        const PromptTester = module.default;
-        app.addMenuLink({
-          to: '/plugins/ai-prompt-tester',
-          icon: 'brain',
-          intlLabel: {
-            id: 'ai-prompt-tester.plugin.name',
-            defaultMessage: 'AI Prompt Tester',
-          },
-          Component: PromptTester,
-        });
-        console.log('✅ Prompt Tester registered');
-      }).catch(err => console.error('❌ Prompt Tester registration failed:', err));
-
-      // Import and register Conditional Logic Help
-      import('./extensions/conditional-logic-help.js').then(module => {
-        const ConditionalLogicHelp = module.default;
-        app.addMenuLink({
-          to: '/plugins/conditional-logic-help',
-          icon: 'question',
-          intlLabel: {
-            id: 'conditional-logic-help.plugin.name',
-            defaultMessage: 'Conditional Logic Help',
-          },
-          Component: ConditionalLogicHelp,
-        });
-        console.log('✅ Conditional Logic Help registered');
-      }).catch(err => console.error('❌ Conditional Logic Help registration failed:', err));
-
-    } catch (error) {
-      console.error('❌ Admin extensions registration failed:', error);
-    }
+    // Admin extensions - disabled for stable deployment
+    console.log('🔧 Admin extensions temporarily disabled for deployment stability');
     
     // Add custom styles for admin extensions
     const style = document.createElement('style');
