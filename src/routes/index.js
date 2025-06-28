@@ -1073,7 +1073,7 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
   },
   {
     method: 'POST',
-    path: '/debug/complete-lead-10',
+    path: '/debug/complete-lead/:leadId',
     handler: async (ctx) => {
       try {
         const testAiResult = `Hallo!
@@ -1101,8 +1101,10 @@ Sie zeigen eine hohe Bereitschaft für KI-Integration mit einem Lead-Score von 1
 
 Viel Erfolg auf Ihrer KI-Reise!`;
 
-        // Update Lead 10 to completed status
-        const updatedLead = await strapi.entityService.update('api::lead.lead', 10, {
+        const { leadId } = ctx.params;
+        
+        // Update Lead to completed status
+        const updatedLead = await strapi.entityService.update('api::lead.lead', parseInt(leadId), {
           data: {
             aiProcessingStatus: 'completed',
             processingProgress: 100,
@@ -1113,14 +1115,14 @@ Viel Erfolg auf Ihrer KI-Reise!`;
 
         // Log the completion
         const debugLogger = require('../services/debug-logger.service');
-        await debugLogger.logLead('MANUAL_COMPLETION', 10, {
+        await debugLogger.logLead('MANUAL_COMPLETION', leadId, {
           completed: true,
           hasAiResult: true
         }, 'SUCCESS', null, ctx);
 
         ctx.body = {
           success: true,
-          message: 'Lead 10 completed successfully',
+          message: `Lead ${leadId} completed successfully`,
           data: {
             leadId: updatedLead.id,
             status: updatedLead.aiProcessingStatus,
@@ -1128,9 +1130,9 @@ Viel Erfolg auf Ihrer KI-Reise!`;
           }
         };
       } catch (error) {
-        strapi.log.error('Error completing lead 10:', error);
+        strapi.log.error(`Error completing lead ${ctx.params.leadId}:`, error);
         ctx.status = 500;
-        ctx.body = { error: 'Failed to complete lead 10' };
+        ctx.body = { error: `Failed to complete lead ${ctx.params.leadId}` };
       }
     },
     config: {
