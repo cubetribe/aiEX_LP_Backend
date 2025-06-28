@@ -201,7 +201,13 @@ module.exports = [
         }
 
         strapi.log.info(`🔍 Looking for campaign ID: ${id} (parsed: ${parseInt(id)})`);
-        const campaign = await strapi.entityService.findOne('api::campaign.campaign', parseInt(id));
+        
+        // Try findMany as fallback to findOne
+        const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
+          filters: { id: parseInt(id) }
+        });
+        const campaign = campaigns && campaigns.length > 0 ? campaigns[0] : null;
+        
         strapi.log.info(`🔍 Campaign found:`, campaign ? 'YES' : 'NO', campaign?.title);
 
         if (!campaign) {
