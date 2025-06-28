@@ -7,8 +7,23 @@ module.exports = [
   // Error handling middleware (first in stack)
   'strapi::errors',
   
-  // Security middleware
-  'strapi::security',
+  // Security middleware with relaxed CSP for admin tools
+  {
+    name: 'strapi::security',
+    config: {
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          'connect-src': ["'self'", 'https:', 'http:'],
+          'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+          'media-src': ["'self'", 'data:', 'blob:'],
+          'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          'script-src-attr': ["'self'", "'unsafe-inline'"],
+          upgradeInsecureRequests: null,
+        },
+      },
+    },
+  },
 
   // CORS middleware - configured for Vercel frontend
   {

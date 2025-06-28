@@ -356,7 +356,7 @@ Erstelle eine professionelle Empfehlung mit:
 3. Konkrete nächste Schritte</textarea>
           </div>
           
-          <button class="btn" id="testBtn" onclick="testPrompt()">
+          <button class="btn" id="testBtn">
             🚀 Test Prompt with All Providers
           </button>
         </div>
@@ -487,11 +487,19 @@ Erstelle eine professionelle Empfehlung mit:
     function renderTemplates() {
       const container = document.getElementById('templateList');
       container.innerHTML = templates.map(template => `
-        <div class="template-item" onclick="selectTemplate('${template.id}')">
+        <div class="template-item" data-template-id="${template.id}">
           <div class="template-name">${template.name}</div>
           <div class="template-desc">${template.description}</div>
         </div>
       `).join('');
+      
+      // Add click handlers after rendering
+      document.querySelectorAll('.template-item').forEach(item => {
+        item.addEventListener('click', function() {
+          const templateId = this.dataset.templateId;
+          selectTemplate(templateId);
+        });
+      });
     }
     
     function selectTemplate(templateId) {
@@ -502,8 +510,10 @@ Erstelle eine professionelle Empfehlung mit:
         // Update UI
         document.querySelectorAll('.template-item').forEach(item => {
           item.classList.remove('active');
+          if (item.dataset.templateId === templateId) {
+            item.classList.add('active');
+          }
         });
-        event.target.closest('.template-item').classList.add('active');
       }
     }
     
@@ -608,7 +618,12 @@ Erstelle eine professionelle Empfehlung mit:
     }
     
     // Initialize on load
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', () => {
+      init();
+      
+      // Add test button click handler
+      document.getElementById('testBtn').addEventListener('click', testPrompt);
+    });
   </script>
 </body>
 </html>
