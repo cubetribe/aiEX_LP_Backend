@@ -101,7 +101,17 @@ class EmailService {
 
   async createTransporter(config) {
     try {
-      const transporter = nodemailer.createTransporter(config);
+      // Remove 'provider' field from config before creating transporter
+      const { provider, ...transporterConfig } = config;
+      
+      strapi.log.info('Creating transporter with config:', {
+        host: transporterConfig.host,
+        port: transporterConfig.port,
+        secure: transporterConfig.secure,
+        user: transporterConfig.auth?.user ? 'SET' : 'MISSING'
+      });
+      
+      const transporter = nodemailer.createTransporter(transporterConfig);
       return transporter;
     } catch (error) {
       strapi.log.error('Failed to create email transporter:', error);
