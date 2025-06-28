@@ -23,8 +23,30 @@ export default {
   bootstrap(app) {
     console.log('GoAIX Admin Panel Bootstrap');
     
-    // Admin extensions - disabled for stable deployment
-    console.log('🔧 Admin extensions temporarily disabled for deployment stability');
+    // Admin extensions - AKTIVIERT für erweiterte Features!
+    console.log('🚀 Admin extensions ACTIVATED - Injecting custom features...');
+    
+    // Inject AI Prompt Tester as a custom button
+    setTimeout(() => {
+      try {
+        // Add AI Prompt Tester button to admin menu
+        const navContainer = document.querySelector('.main-nav-wrapper');
+        if (navContainer) {
+          const aiTesterBtn = document.createElement('a');
+          aiTesterBtn.href = '#';
+          aiTesterBtn.className = 'main-nav-link';
+          aiTesterBtn.innerHTML = '🤖 AI Prompt Tester';
+          aiTesterBtn.onclick = (e) => {
+            e.preventDefault();
+            window.open('/admin/ai-prompt-tester', 'AI Prompt Tester', 'width=1200,height=800');
+          };
+          navContainer.appendChild(aiTesterBtn);
+          console.log('✅ AI Prompt Tester button added');
+        }
+      } catch (err) {
+        console.error('Failed to inject AI Tester:', err);
+      }
+    }, 3000);
     
     // Add custom styles for admin extensions
     const style = document.createElement('style');

@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🤖 AI Prompt Tester - GoAIX Admin</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f6f8fa;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
+    }
+    
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+    
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+    
+    @media (max-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e1e4e8;
+    }
+    
+    .card h2 {
+      margin-bottom: 20px;
+      color: #4f46e5;
+      font-size: 1.4em;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #555;
+    }
+    
+    select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e1e4e8;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    
+    select:focus, textarea:focus {
+      outline: none;
+      border-color: #4f46e5;
+    }
+    
+    textarea {
+      min-height: 200px;
+      resize: vertical;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    }
+    
+    .provider-status {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .status-badge {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .status-badge.active {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .status-badge.inactive {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .btn {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .results {
+      margin-top: 20px;
+    }
+    
+    .result-item {
+      background: #f8f9fa;
+      border: 1px solid #e1e4e8;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 15px;
+    }
+    
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .result-provider {
+      font-weight: 600;
+      color: #4f46e5;
+      font-size: 1.1em;
+    }
+    
+    .result-metrics {
+      display: flex;
+      gap: 15px;
+      font-size: 13px;
+      color: #666;
+    }
+    
+    .result-content {
+      background: white;
+      border: 1px solid #e1e4e8;
+      border-radius: 6px;
+      padding: 15px;
+      white-space: pre-wrap;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.8;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .spinner {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #4f46e5;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .sample-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .sample-btn {
+      padding: 6px 12px;
+      border: 2px solid #e1e4e8;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    
+    .sample-btn:hover {
+      border-color: #4f46e5;
+      color: #4f46e5;
+    }
+    
+    .sample-btn.active {
+      background: #4f46e5;
+      color: white;
+      border-color: #4f46e5;
+    }
+    
+    .template-list {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .template-item {
+      background: #f8f9fa;
+      border: 2px solid #e1e4e8;
+      border-radius: 8px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .template-item:hover {
+      border-color: #4f46e5;
+      transform: translateX(5px);
+    }
+    
+    .template-item.active {
+      border-color: #4f46e5;
+      background: #eef2ff;
+    }
+    
+    .template-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    
+    .template-desc {
+      font-size: 13px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 AI Prompt Tester</h1>
+      <p>Test and compare AI prompts across different providers to optimize your campaign results</p>
+    </div>
+    
+    <div class="main-grid">
+      <!-- Left Column - Input -->
+      <div>
+        <div class="card">
+          <h2>📝 Prompt Configuration</h2>
+          
+          <div class="provider-status" id="providerStatus">
+            <div class="status-badge inactive">
+              <span class="status-icon">⚪</span>
+              <span>OpenAI</span>
+            </div>
+            <div class="status-badge inactive">
+              <span class="status-icon">⚪</span>
+              <span>Anthropic</span>
+            </div>
+            <div class="status-badge inactive">
+              <span class="status-icon">⚪</span>
+              <span>Gemini</span>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Select Providers to Test</label>
+            <div class="provider-status">
+              <label class="sample-btn">
+                <input type="checkbox" value="openai" checked> OpenAI
+              </label>
+              <label class="sample-btn">
+                <input type="checkbox" value="anthropic" checked> Anthropic
+              </label>
+              <label class="sample-btn">
+                <input type="checkbox" value="gemini" checked> Gemini
+              </label>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Sample Data</label>
+            <div class="sample-selector" id="sampleSelector">
+              <button class="sample-btn active" data-sample="business">Business Lead</button>
+              <button class="sample-btn" data-sample="private">Private Lead</button>
+              <button class="sample-btn" data-sample="hot">Hot Lead</button>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Prompt Template</label>
+            <div class="template-list" id="templateList">
+              <!-- Templates will be loaded here -->
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Custom Prompt (uses variables like {{firstName}}, {{responses}})</label>
+            <textarea id="promptTemplate" placeholder="Enter your prompt template here...">Erstelle eine personalisierte AI-Bedarfsanalyse für {{firstName}}.
+
+Lead-Informationen:
+- Name: {{firstName}}
+- E-Mail: {{email}}
+- Lead-Score: {{leadScore}}/100
+- Lead-Qualität: {{leadQuality}}
+
+Antworten:
+{{responses}}
+
+Erstelle eine professionelle Empfehlung mit:
+1. Persönliche Einschätzung
+2. AI-Potenzial
+3. Konkrete nächste Schritte</textarea>
+          </div>
+          
+          <button class="btn" id="testBtn" onclick="testPrompt()">
+            🚀 Test Prompt with All Providers
+          </button>
+        </div>
+      </div>
+      
+      <!-- Right Column - Results -->
+      <div>
+        <div class="card">
+          <h2>📊 Test Results</h2>
+          <div id="results">
+            <p style="color: #666; text-align: center; padding: 40px;">
+              Test your prompt to see results from different AI providers...
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Sample data presets
+    const sampleData = {
+      business: {
+        firstName: "Max",
+        email: "max@company.de",
+        leadScore: 85,
+        leadQuality: "hot",
+        responses: {
+          user_type: "Unternehmer",
+          company_size: "51-200",
+          industry: "Technologie",
+          ai_experience: "Mittel"
+        }
+      },
+      private: {
+        firstName: "Anna",
+        email: "anna@gmail.com",
+        leadScore: 45,
+        leadQuality: "warm",
+        responses: {
+          user_type: "Privatperson",
+          income: "60k-100k",
+          goal: "Karriere",
+          ai_experience: "Wenig"
+        }
+      },
+      hot: {
+        firstName: "Thomas",
+        email: "thomas@enterprise.com",
+        leadScore: 95,
+        leadQuality: "hot",
+        responses: {
+          user_type: "Unternehmer",
+          company_size: "200+",
+          industry: "Produktion",
+          ai_experience: "Viel",
+          budget: "100k+"
+        }
+      }
+    };
+    
+    let currentSample = 'business';
+    let templates = [];
+    
+    // Initialize
+    async function init() {
+      // Check provider status
+      checkProviderStatus();
+      
+      // Load templates
+      loadTemplates();
+      
+      // Setup sample selector
+      document.querySelectorAll('#sampleSelector .sample-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('#sampleSelector .sample-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentSample = btn.dataset.sample;
+        });
+      });
+    }
+    
+    async function checkProviderStatus() {
+      try {
+        const response = await fetch('/ai/status');
+        const data = await response.json();
+        
+        if (data.success && data.data.providers) {
+          updateProviderStatus(data.data.providers);
+        }
+      } catch (error) {
+        console.error('Failed to check provider status:', error);
+      }
+    }
+    
+    function updateProviderStatus(providers) {
+      const statusElements = document.querySelectorAll('#providerStatus .status-badge');
+      const providerMap = {
+        0: 'openai',
+        1: 'anthropic',
+        2: 'gemini'
+      };
+      
+      statusElements.forEach((elem, index) => {
+        const provider = providerMap[index];
+        if (providers[provider]) {
+          elem.classList.remove('inactive');
+          elem.classList.add('active');
+          elem.querySelector('.status-icon').textContent = '✅';
+        }
+      });
+    }
+    
+    async function loadTemplates() {
+      try {
+        const response = await fetch('/ai/prompt-templates');
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          templates = data.data;
+          renderTemplates();
+        }
+      } catch (error) {
+        console.error('Failed to load templates:', error);
+      }
+    }
+    
+    function renderTemplates() {
+      const container = document.getElementById('templateList');
+      container.innerHTML = templates.map(template => `
+        <div class="template-item" onclick="selectTemplate('${template.id}')">
+          <div class="template-name">${template.name}</div>
+          <div class="template-desc">${template.description}</div>
+        </div>
+      `).join('');
+    }
+    
+    function selectTemplate(templateId) {
+      const template = templates.find(t => t.id === templateId);
+      if (template) {
+        document.getElementById('promptTemplate').value = template.template;
+        
+        // Update UI
+        document.querySelectorAll('.template-item').forEach(item => {
+          item.classList.remove('active');
+        });
+        event.target.closest('.template-item').classList.add('active');
+      }
+    }
+    
+    async function testPrompt() {
+      const promptTemplate = document.getElementById('promptTemplate').value;
+      const selectedProviders = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
+      
+      if (!promptTemplate.trim()) {
+        alert('Please enter a prompt template');
+        return;
+      }
+      
+      if (selectedProviders.length === 0) {
+        alert('Please select at least one provider');
+        return;
+      }
+      
+      const btn = document.getElementById('testBtn');
+      const resultsDiv = document.getElementById('results');
+      
+      btn.disabled = true;
+      btn.textContent = '⏳ Testing...';
+      
+      resultsDiv.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Testing prompt with ${selectedProviders.length} providers...</p>
+        </div>
+      `;
+      
+      try {
+        const response = await fetch('/ai/test-prompt', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            promptTemplate: promptTemplate,
+            sampleDataId: currentSample,
+            providers: selectedProviders,
+            model: 'auto'
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          displayResults(data.data);
+        } else {
+          resultsDiv.innerHTML = `
+            <div class="result-item" style="border-color: #ef4444;">
+              <p style="color: #ef4444;">Error: ${data.error || 'Failed to test prompt'}</p>
+              ${data.details ? `<p style="color: #666; margin-top: 10px;">${data.details}</p>` : ''}
+            </div>
+          `;
+        }
+      } catch (error) {
+        resultsDiv.innerHTML = `
+          <div class="result-item" style="border-color: #ef4444;">
+            <p style="color: #ef4444;">Error: ${error.message}</p>
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🚀 Test Prompt with All Providers';
+      }
+    }
+    
+    function displayResults(results) {
+      const resultsDiv = document.getElementById('results');
+      
+      const resultsHtml = Object.entries(results).map(([provider, result]) => {
+        if (result.error) {
+          return `
+            <div class="result-item" style="border-color: #ef4444;">
+              <div class="result-header">
+                <div class="result-provider">${provider.charAt(0).toUpperCase() + provider.slice(1)}</div>
+                <div style="color: #ef4444;">❌ Error</div>
+              </div>
+              <p style="color: #666;">${result.error}</p>
+            </div>
+          `;
+        }
+        
+        return `
+          <div class="result-item">
+            <div class="result-header">
+              <div class="result-provider">${provider.charAt(0).toUpperCase() + provider.slice(1)}</div>
+              <div class="result-metrics">
+                <span>⏱ ${result.duration}</span>
+                <span>📝 ${result.wordCount} words</span>
+                ${result.cost ? `<span>💰 ${result.cost}</span>` : ''}
+              </div>
+            </div>
+            <div class="result-content">${result.response}</div>
+          </div>
+        `;
+      }).join('');
+      
+      resultsDiv.innerHTML = resultsHtml;
+    }
+    
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
