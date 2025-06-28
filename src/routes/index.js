@@ -564,6 +564,54 @@ module.exports = [
     },
   },
   {
+    method: 'GET',
+    path: '/leads/:id/status',
+    handler: async (ctx) => {
+      try {
+        const { id } = ctx.params;
+        
+        // Set CORS headers
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          ctx.set('Access-Control-Allow-Origin', origin);
+          ctx.set('Access-Control-Allow-Credentials', 'true');
+          ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+
+        const lead = await strapi.entityService.findOne('api::lead.lead', id);
+
+        if (!lead) {
+          ctx.status = 404;
+          ctx.body = { error: 'Lead not found' };
+          return;
+        }
+
+        // Return lead processing status
+        ctx.body = {
+          success: true,
+          data: {
+            id: lead.id,
+            status: lead.aiProcessingStatus || 'pending',
+            progress: lead.processingProgress || 0,
+            currentStep: lead.currentProcessingStep || 'Initializing...',
+            estimatedTimeRemaining: lead.estimatedTimeRemaining || null,
+            aiResult: lead.aiResult || null,
+            leadScore: lead.leadScore,
+            leadQuality: lead.leadQuality
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error fetching lead status:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to fetch lead status' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
     method: 'POST',
     path: '/campaigns/:slug/configure-result-delivery',
     handler: async (ctx) => {
