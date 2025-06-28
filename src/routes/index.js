@@ -1259,9 +1259,23 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
         const emailService = require('../services/email.service');
         const status = emailService.getStatus();
         
+        // Debug environment variables (safely)
+        const envDebug = {
+          EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || 'NOT_SET',
+          SMTP_HOST: process.env.SMTP_HOST || 'NOT_SET',
+          SMTP_PORT: process.env.SMTP_PORT || 'NOT_SET',
+          SMTP_USERNAME: process.env.SMTP_USERNAME ? 'SET' : 'NOT_SET',
+          SMTP_PASSWORD: process.env.SMTP_PASSWORD ? 'SET' : 'NOT_SET',
+          SMTP_USER: process.env.SMTP_USER ? 'SET' : 'NOT_SET',
+          SMTP_PASS: process.env.SMTP_PASS ? 'SET' : 'NOT_SET'
+        };
+        
         ctx.body = {
           success: true,
-          data: status
+          data: {
+            ...status,
+            envDebug
+          }
         };
         
       } catch (error) {
