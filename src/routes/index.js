@@ -1294,6 +1294,40 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
   },
   {
     method: 'POST',
+    path: '/email/reinit',
+    handler: async (ctx) => {
+      try {
+        strapi.log.info('🔄 Manual email service reinitialization...');
+        
+        const emailService = require('../services/email.service');
+        
+        // Force reinitialize
+        await emailService.init();
+        
+        const status = emailService.getStatus();
+        
+        ctx.body = {
+          success: true,
+          message: 'Email service reinitialized',
+          data: status
+        };
+        
+      } catch (error) {
+        strapi.log.error('Email service reinit failed:', error);
+        ctx.status = 500;
+        ctx.body = { 
+          success: false,
+          error: 'Failed to reinitialize email service',
+          details: error.message 
+        };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'POST',
     path: '/leads/:id/reprocess',
     handler: async (ctx) => {
       const { id } = ctx.params;
