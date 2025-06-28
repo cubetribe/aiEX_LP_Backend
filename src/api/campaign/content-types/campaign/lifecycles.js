@@ -56,40 +56,87 @@ module.exports = {
   async beforeUpdate(event) {
     const { data } = event.params;
     
+    // Log incoming update data for debugging
+    strapi.log.info('📝 Campaign update event:', {
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data) : [],
+      hasConfig: !!data?.config,
+      configKeys: data?.config ? Object.keys(data.config) : [],
+      hasResultDisplayConfig: !!data?.resultDisplayConfig,
+      whereClause: event.params.where,
+      fullData: JSON.stringify(data, null, 2)
+    });
+    
+    // Skip validation if no data or config changes
+    if (!data || (!data.config && !data.resultDisplayConfig)) {
+      return;
+    }
+    
+    // Get campaign ID from where clause
+    const campaignId = event.params.where?.id || event.params.where;
+    
+    if (!campaignId) {
+      strapi.log.warn('No campaign ID found in update event, skipping validation');
+      return;
+    }
+    
     // Get existing campaign to check type
     const existingCampaign = await strapi.entityService.findOne(
       'api::campaign.campaign',
-      event.params.where.id
+      campaignId
     );
     
     if (!existingCampaign) {
-      throw new Error('Campaign not found for update');
+      strapi.log.warn(`Campaign ${campaignId} not found for update, skipping validation`);
+      return;
     }
     
     // Use existing type if not provided in update
     const campaignType = data.campaignType || existingCampaign.campaignType;
     
     // VALIDATE CONFIG JSON ON UPDATE
-    if (data.config) {
-      // Skip validation if config is empty or if we're just updating other fields
-      if (Object.keys(data.config).length > 0) {
-        // Merge with existing config to ensure we have all required fields
+    if (data.config !== undefined) {
+      // If config is being updated
+      if (data.config && typeof data.config === 'object') {
+        // For partial updates from admin panel, always merge with existing
         const mergedConfig = {
           ...(existingCampaign.config || {}),
           ...data.config
         };
         
+        // Ensure required fields from existing campaign are preserved
+        if (campaignType === 'quiz' && existingCampaign.config) {
+          // Preserve title and questions if not in update
+          if (!data.config.title && existingCampaign.config.title) {
+            mergedConfig.title = existingCampaign.config.title;
+          }
+          if (!data.config.questions && existingCampaign.config.questions) {
+            mergedConfig.questions = existingCampaign.config.questions;
+          }
+        }
+        
+        strapi.log.info('📋 Merged config for validation:', {
+          campaignType,
+          hasTitle: !!mergedConfig.title,
+          hasQuestions: !!mergedConfig.questions,
+          questionsCount: mergedConfig.questions?.length || 0
+        });
+        
         const validation = validateCampaignConfig(mergedConfig, campaignType);
         
         if (!validation.success) {
           const errorMessages = validation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
+          strapi.log.error('❌ Campaign validation failed:', {
+            errors: validation.errors,
+            mergedConfig
+          });
           const error = new Error(`Campaign configuration validation failed: ${errorMessages}`);
           error.details = validation.errors;
           throw error;
         }
         
-        // Use validated config
-        data.config = validation.data;
+        // Use merged config to preserve all fields
+        data.config = mergedConfig;
         strapi.log.info(`✅ Campaign config validated for update: ${campaignType}`);
       }
     }
