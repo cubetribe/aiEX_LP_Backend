@@ -71,7 +71,7 @@ class EmailService {
             hasUser: !!transporterConfig.auth.user
           })}`);
           
-          this.transporter = nodemailer.createTransporter(transporterConfig);
+          this.transporter = nodemailer.createTransport(transporterConfig);
           this.isConfigured = true;
           this.debugInfo.push('SUCCESS');
           
@@ -163,7 +163,7 @@ class EmailService {
         user: transporterConfig.auth?.user ? 'SET' : 'MISSING'
       });
       
-      const transporter = nodemailer.createTransporter(transporterConfig);
+      const transporter = nodemailer.createTransport(transporterConfig);
       return transporter;
     } catch (error) {
       strapi.log.error('Failed to create email transporter:', error);
