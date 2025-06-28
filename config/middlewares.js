@@ -18,10 +18,12 @@ module.exports = [
       headers: '*',
       origin: function(ctx) {
         const origin = ctx.get('Origin');
-        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+        // Allow localhost for development
+        if (origin && (origin.includes('localhost') || origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
           return origin;
         }
-        return false;
+        // For debugging: allow any origin temporarily
+        return origin || '*';
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
