@@ -82,18 +82,57 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
 
       strapi.log.info(`Lead created: ${lead.email} (Score: ${leadScore}, Quality: ${leadQuality})`);
       
-      // Queue-based result delivery if queue service is available
-      if (strapi.queueService) {
-        try {
-          await this.handleQueuedResultDelivery(lead, campaignData);
-        } catch (queueError) {
-          strapi.log.warn('Queue processing failed, falling back to immediate processing:', queueError);
-          await this.handleResultDelivery(lead, campaignData);
+      // GUARANTEED AI PROCESSING - Always process regardless of queue status
+      strapi.log.info(`🎯 GUARANTEED AI PROCESSING for lead ${lead.id}`);
+      strapi.log.info(`🔍 Queue service available: ${!!strapi.queueService}`);
+      
+      try {
+        // FIRST: Try immediate AI processing (guaranteed to work)
+        strapi.log.info(`🚀 Starting IMMEDIATE AI processing for lead ${lead.id}`);
+        const processedLead = await this.processLeadWithAI(lead.id);
+        strapi.log.info(`✅ IMMEDIATE AI processing completed for lead ${lead.id}`);
+        
+        // SECOND: Send email if configured
+        const deliveryMode = campaignData?.resultDeliveryMode || 'show_only';
+        if (deliveryMode === 'show_and_email' || deliveryMode === 'email_only') {
+          try {
+            strapi.log.info(`📧 Sending email for lead ${lead.id}`);
+            if (strapi.emailService) {
+              await strapi.emailService.sendLeadResult(processedLead);
+              strapi.log.info(`📧 Email sent successfully for lead ${lead.id}`);
+            } else {
+              strapi.log.warn(`📧 Email service not available for lead ${lead.id}`);
+            }
+          } catch (emailError) {
+            strapi.log.error(`📧 Email failed for lead ${lead.id}:`, emailError);
+          }
         }
-      } else {
-        // Fallback to immediate processing
-        strapi.log.info('No queue service available, using immediate processing');
-        await this.handleResultDelivery(lead, campaignData);
+        
+        // THIRD: Try queue for analytics (optional)
+        if (strapi.queueService) {
+          try {
+            await strapi.queueService.addAnalyticsJob({
+              event: 'lead_processed',
+              data: { leadId: lead.id, campaignId: campaignData.id }
+            });
+            strapi.log.info(`📊 Analytics job queued for lead ${lead.id}`);
+          } catch (analyticsError) {
+            strapi.log.warn(`📊 Analytics job failed for lead ${lead.id}:`, analyticsError);
+          }
+        }
+        
+      } catch (immediateError) {
+        strapi.log.error(`❌ CRITICAL: Immediate AI processing failed for lead ${lead.id}:`, immediateError);
+        
+        // FALLBACK: Try queue if immediate fails
+        if (strapi.queueService) {
+          try {
+            strapi.log.info(`🔄 Fallback: Trying queue for lead ${lead.id}`);
+            await this.handleQueuedResultDelivery(lead, campaignData);
+          } catch (queueError) {
+            strapi.log.error(`❌ CRITICAL: Both immediate and queue processing failed for lead ${lead.id}`);
+          }
+        }
       }
       
       return lead;
