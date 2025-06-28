@@ -10,8 +10,24 @@ module.exports = [
   // Security middleware
   'strapi::security',
 
-  // CORS middleware - simplified for debugging
-  'strapi::cors',
+  // CORS middleware - configured for Vercel frontend
+  {
+    name: 'strapi::cors',
+    config: {
+      enabled: true,
+      headers: '*',
+      origin: function(ctx) {
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          return origin;
+        }
+        return false;
+      },
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      maxAge: 86400, // 24 hours
+    },
+  },
 
   // Remove or customize powered-by header
   'strapi::poweredBy',
