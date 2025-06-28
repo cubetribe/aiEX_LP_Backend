@@ -38,6 +38,16 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
    */
   async processLeadSubmission(data) {
     try {
+      // DEBUG: Log incoming data
+      strapi.log.info('🔍 Lead Submission Debug:', {
+        firstName: data.firstName,
+        email: data.email,
+        responsesType: typeof data.responses,
+        responsesKeys: data.responses ? Object.keys(data.responses) : [],
+        responsesContent: data.responses,
+        campaign: data.campaign
+      });
+
       // Get campaign for conditional scoring
       const campaignData = await strapi.entityService.findOne('api::campaign.campaign', data.campaign, {
         fields: ['config', 'jsonCode']
@@ -46,15 +56,28 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
       // Calculate score and quality with campaign logic
       const { leadScore, leadQuality } = this.calculateEnhancedScore(data.responses, campaignData);
 
+      // DEBUG: Log before database save
+      const leadDataToSave = {
+        ...data,
+        leadScore,
+        leadQuality,
+        responses: data.responses || {}
+      };
+      strapi.log.info('🔍 Lead Data to Save:', leadDataToSave);
+
       // Create lead with calculated values
       const lead = await strapi.entityService.create('api::lead.lead', {
-        data: {
-          ...data,
-          leadScore,
-          leadQuality,
-          responses: data.responses || {}
-        },
+        data: leadDataToSave,
         populate: ['campaign']
+      });
+
+      // DEBUG: Log after database save
+      strapi.log.info('🔍 Lead Created:', {
+        id: lead.id,
+        firstName: lead.firstName,
+        email: lead.email,
+        responses: lead.responses,
+        responsesType: typeof lead.responses
       });
 
       strapi.log.info(`Lead created: ${lead.email} (Score: ${leadScore}, Quality: ${leadQuality})`);

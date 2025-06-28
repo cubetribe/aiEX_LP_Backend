@@ -1101,74 +1101,6 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
   },
   {
     method: 'POST',
-    path: '/debug/complete-lead/:leadId',
-    handler: async (ctx) => {
-      try {
-        const testAiResult = `Hallo!
-
-Basierend auf Ihren Antworten sehe ich großes Potenzial für KI in Ihrem Bereich.
-
-🎯 **Ihre Einschätzung:**
-Sie zeigen eine hohe Bereitschaft für KI-Integration mit einem Lead-Score von 100/100 (hot Lead).
-
-💡 **AI-Potenzial für Sie:**
-• Automatisierung von Routineaufgaben
-• Datenanalyse und Insights  
-• Kundenservice-Verbesserung
-• Produktivitätssteigerung
-
-📋 **Konkrete nächste Schritte:**
-1. Starten Sie mit ChatGPT für erste Erfahrungen
-2. Testen Sie Notion AI für Produktivität
-3. Evaluieren Sie branchenspezifische AI-Tools
-
-🚀 **Empfehlungen:**
-- Beginnen Sie mit kleinen Projekten
-- Schulen Sie Ihr Team schrittweise  
-- Achten Sie auf Datenschutz-Compliance
-
-Viel Erfolg auf Ihrer KI-Reise!`;
-
-        const { leadId } = ctx.params;
-        
-        // Update Lead to completed status
-        const updatedLead = await strapi.entityService.update('api::lead.lead', parseInt(leadId), {
-          data: {
-            aiProcessingStatus: 'completed',
-            processingProgress: 100,
-            currentProcessingStep: 'Processing completed',
-            aiResult: testAiResult
-          }
-        });
-
-        // Log the completion
-        const debugLogger = require('../services/debug-logger.service');
-        await debugLogger.logLead('MANUAL_COMPLETION', leadId, {
-          completed: true,
-          hasAiResult: true
-        }, 'SUCCESS', null, ctx);
-
-        ctx.body = {
-          success: true,
-          message: `Lead ${leadId} completed successfully`,
-          data: {
-            leadId: updatedLead.id,
-            status: updatedLead.aiProcessingStatus,
-            hasResult: !!updatedLead.aiResult
-          }
-        };
-      } catch (error) {
-        strapi.log.error(`Error completing lead ${ctx.params.leadId}:`, error);
-        ctx.status = 500;
-        ctx.body = { error: `Failed to complete lead ${ctx.params.leadId}` };
-      }
-    },
-    config: {
-      auth: false,
-    },
-  },
-  {
-    method: 'POST',
     path: '/admin/fix-campaigns',
     handler: async (ctx) => {
       try {
@@ -1205,6 +1137,59 @@ Viel Erfolg auf Ihrer KI-Reise!`;
         console.error('❌ Error fixing campaigns:', error);
         ctx.status = 500;
         ctx.body = { error: 'Failed to fix campaigns', details: error.message };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'GET',
+    path: '/admin/debug-leads',
+    handler: async (ctx) => {
+      try {
+        console.log('🔍 Debug leads request...');
+        
+        // Get all leads with basic info
+        const leads = await strapi.entityService.findMany('api::lead.lead', {
+          fields: ['id', 'firstName', 'email', 'responses', 'leadScore', 'leadQuality', 'aiProcessingStatus'],
+          populate: {
+            campaign: {
+              fields: ['id', 'title', 'slug']
+            }
+          },
+          sort: 'id:desc',
+          limit: 10
+        });
+        
+        console.log(`✅ Found ${leads.length} leads`);
+        
+        ctx.body = {
+          success: true,
+          message: `Found ${leads.length} leads`,
+          data: {
+            leads: leads.map(lead => ({
+              id: lead.id,
+              firstName: lead.firstName,
+              email: lead.email,
+              responses: lead.responses,
+              hasResponses: !!lead.responses && Object.keys(lead.responses || {}).length > 0,
+              leadScore: lead.leadScore,
+              leadQuality: lead.leadQuality,
+              aiProcessingStatus: lead.aiProcessingStatus,
+              campaign: lead.campaign ? {
+                id: lead.campaign.id,
+                title: lead.campaign.title,
+                slug: lead.campaign.slug
+              } : null
+            }))
+          }
+        };
+        
+      } catch (error) {
+        console.error('❌ Error debugging leads:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to debug leads', details: error.message };
       }
     },
     config: {

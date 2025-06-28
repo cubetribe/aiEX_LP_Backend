@@ -242,12 +242,12 @@ ${prompt}`;
     
     // Standard template variables
     const variables = {
-      firstName: data.firstName || 'Max',
-      email: data.email || 'max@example.com',
+      firstName: data.firstName || '[Name nicht verfügbar]',
+      email: data.email || '[E-Mail nicht verfügbar]',
       responses: JSON.stringify(data.responses || {}, null, 2),
-      campaignTitle: data.campaignTitle || 'Test Campaign',
-      leadScore: data.leadScore || 75,
-      leadQuality: data.leadQuality || 'warm',
+      campaignTitle: data.campaignTitle || '[Kampagne]',
+      leadScore: data.leadScore || 0,
+      leadQuality: data.leadQuality || 'unqualified',
       responseCount: Object.keys(data.responses || {}).length,
       timestamp: new Date().toLocaleString('de-DE')
     };
@@ -420,55 +420,21 @@ ${prompt}`;
   }
 
   /**
-   * Get sample data for testing
+   * Get sample data for prompt testing (production-safe defaults)
    */
   getSampleData() {
     return [
       {
-        name: 'Unternehmer - Großunternehmen',
+        name: 'Standard Profile',
         data: {
-          firstName: 'Thomas',
-          email: 'thomas@example.com',
-          campaignTitle: 'AI-Bedarfsanalyse',
-          leadScore: 95,
-          leadQuality: 'hot',
-          responses: {
-            user_type: 'Unternehmer',
-            company_size: '200+',
-            business_industry: 'Technologie',
-            ai_experience: 'Viel'
-          }
-        }
-      },
-      {
-        name: 'Privatperson - Hohes Einkommen',
-        data: {
-          firstName: 'Sarah',
-          email: 'sarah@example.com',
-          campaignTitle: 'AI-Bedarfsanalyse',
-          leadScore: 65,
+          firstName: '{{firstName}}',
+          email: '{{email}}',
+          campaignTitle: '{{campaignTitle}}',
+          leadScore: 70,
           leadQuality: 'warm',
           responses: {
-            user_type: 'Privatperson',
-            private_income: 'Über 100k',
-            private_goal: 'Karriere',
-            ai_experience: 'Mittel'
-          }
-        }
-      },
-      {
-        name: 'Startup-Gründer',
-        data: {
-          firstName: 'Alex',
-          email: 'alex@startup.com',
-          campaignTitle: 'AI-Bedarfsanalyse',
-          leadScore: 75,
-          leadQuality: 'warm',
-          responses: {
-            user_type: 'Unternehmer',
-            company_size: '1-10',
-            business_industry: 'Technologie',
-            ai_experience: 'Viel'
+            answer_1: 'Sample response 1',
+            answer_2: 'Sample response 2'
           }
         }
       }

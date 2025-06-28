@@ -505,3 +505,71 @@ Key environment variables (see .env.example):
 
   ---
   Stand: 29.06.2025 00:15 CET - AI-Result System vollständig funktionsfähig! 🎉✅
+
+  ===================================================================
+  
+  🚨 WICHTIGER HINWEIS: GITHUB UPLOAD GUIDELINES 🚨
+
+  **User-Anforderung:** "Wenn Du etwas zu github hochlädt, achte bitte immer darauf, dass die aktuelle Version, die du gerade hochlädt, entsprechend der letzten Änderungen benannt ist. So dass man auf github nachvollziehen kann, was zuletzt geändert wurde, beziehungsweise warum wir das hochgeladen haben. Beginne damit ab dem nächsten deploy!"
+
+  **AB SOFORT:** Alle Git-Commits müssen beschreibende Messages enthalten, die die Änderungen klar benennen.
+
+  ===================================================================
+
+  🔧 SESSION FORTSCHRITT - 28.06.2025 (19:00-20:00 CET) 🔧
+
+  ## ✅ PHASE 1.3: RESPONSES STORAGE PROBLEM - KRITISCHE DIAGNOSE
+
+  ### **🚨 AKUTE PROBLEME ENTDECKT:**
+
+  **1. CLAUDE.md DATENVERLUST** ⚠️ **BEHOBEN**
+  - 700+ Zeilen Dokumentation waren plötzlich verschwunden
+  - **Ursache**: Git-Konflikt oder versehentliche Überschreibung
+  - **Lösung**: `git checkout aadab53 -- CLAUDE.md` → Vollständig wiederhergestellt ✅
+
+  **2. RESPONSES STORAGE PROBLEM** 🔴 **AKTIV**
+  - Lead 25, 26, 27: Alle haben `responses: null` trotz erfolgreicher Submission
+  - **Debug aktiviert**: Lead Service mit detailliertem Logging erweitert
+  - **Schema-Fix**: `email: required: false` (war `true`)
+  - **Symptom**: Sogar Lead-IDs sind `null` in `/leads/:id/result` Response
+
+  ### **DURCHGEFÜHRTE DEBUGGING-SCHRITTE:**
+
+  **1. Lead Service Debug Logging aktiviert:**
+  ```javascript
+  // Logs in src/api/lead/services/lead.js:
+  strapi.log.info('🔍 Lead Submission Debug:', {
+    firstName, email, responsesType: typeof data.responses,
+    responsesKeys: Object.keys(data.responses || []),
+    responsesContent: data.responses
+  });
+  ```
+
+  **2. Schema Fix implementiert:**
+  ```json
+  // src/api/lead/content-types/lead/schema.json
+  "email": { "type": "email", "required": false }  // war true
+  ```
+
+  **3. Test-Leads erstellt:**
+  - Lead 25: "AI Pipeline Test" + Pizza-Antworten
+  - Lead 26: "Debug Storage Test" + Debug-Antworten  
+  - **Alle haben responses: null Problem**
+
+  ### **VERDACHT AUF ROOT CAUSE:**
+  
+  **Mögliche Ursachen:**
+  1. **Database Schema Mismatch**: JSON-Field nicht korrekt definiert
+  2. **Strapi Entity Service Bug**: responses werden nicht gespeichert
+  3. **Field-Name Conflict**: responses vs andere Namen
+  4. **Validation Error**: Strapi lehnt JSON-Data ab
+
+  ### **NÄCHSTE DEBUGGING-SCHRITTE:**
+  1. Railway Logs auslesen (Debug-Informationen)
+  2. Direkter Database-Zugriff (PostgreSQL Query)
+  3. Alternative Field-Namen testen
+  4. Strapi Admin Panel → Lead-Übersicht prüfen
+
+  ---
+
+  **Stand: 28.06.2025 20:00 CET - Responses Storage Problem diagnostiziert, Schema-Fix deployed! 🔬⚠️**
