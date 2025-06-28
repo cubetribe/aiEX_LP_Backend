@@ -19,7 +19,9 @@ module.exports = {
     // Initialize Email Service
     try {
       const emailService = require('./services/email.service');
-      strapi.log.info('✅ Email Service initialized');
+      // Force initialization by calling getStatus
+      const emailStatus = emailService.getStatus();
+      strapi.log.info('✅ Email Service initialized:', emailStatus);
     } catch (error) {
       strapi.log.error('❌ Error initializing Email service:', error);
     }
