@@ -8,6 +8,14 @@ module.exports = {
   async bootstrap({ strapi }) {
     strapi.log.info('🎯 Bootstrapping GoAIX Platform...');
     
+    // Initialize AI Services
+    try {
+      const aiProviderService = require('./services/ai-provider.service');
+      strapi.log.info('✅ AI Provider Service initialized');
+    } catch (error) {
+      strapi.log.error('❌ Error initializing AI services:', error);
+    }
+    
     // Register custom routes
     try {
       const globalRoutes = require('./routes');
