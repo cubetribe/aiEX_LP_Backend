@@ -327,6 +327,48 @@ class EmailService {
   }
 
   /**
+   * Send test email with custom content
+   */
+  async sendTestEmail(to, subject, content) {
+    if (!this.isConfigured) {
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    try {
+      const emailData = {
+        from: process.env.SMTP_USERNAME || 'mail@goaiex.com',
+        to,
+        subject,
+        text: content,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2c3e50;">GoAIX Test Email</h2>
+            <p>${content}</p>
+            <hr style="margin: 20px 0;">
+            <p style="font-size: 12px; color: #666;">
+              Test email sent from GoAIX Email Service
+            </p>
+          </div>
+        `
+      };
+
+      const info = await this.transporter.sendMail(emailData);
+      
+      return {
+        success: true,
+        messageId: info.messageId,
+        recipient: to,
+        message: 'Test email sent successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * Get email service status
    */
   getStatus() {

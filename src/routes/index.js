@@ -1251,4 +1251,31 @@ Stil: Überzeugend, nutzenorientiert, mit klaren CTAs. Nicht aufdringlich aber v
       auth: false,
     },
   },
+  {
+    method: 'GET',
+    path: '/email/status',
+    handler: async (ctx) => {
+      try {
+        const emailService = require('../services/email.service');
+        const status = emailService.getStatus();
+        
+        ctx.body = {
+          success: true,
+          data: status
+        };
+        
+      } catch (error) {
+        strapi.log.error('Error getting email status:', error);
+        ctx.status = 500;
+        ctx.body = { 
+          success: false,
+          error: 'Failed to get email status',
+          details: error.message 
+        };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
 ];
