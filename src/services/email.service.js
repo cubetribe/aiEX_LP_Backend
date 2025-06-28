@@ -11,30 +11,48 @@ class EmailService {
   constructor() {
     this.transporter = null;
     this.isConfigured = false;
+    this.debugInfo = [];
     this.init();
   }
 
   async init() {
+    this.debugInfo = [];
+    
     try {
+      this.debugInfo.push('INIT_START');
+      
       // Check environment configuration
       const emailConfig = this.getEmailConfig();
       
-      strapi.log.info('🔍 Email Config Debug:', {
+      this.debugInfo.push(`CONFIG_LOADED: ${JSON.stringify({
         provider: emailConfig.provider,
         host: emailConfig.host,
         port: emailConfig.port,
-        user: emailConfig.auth?.user ? '***' + emailConfig.auth.user.slice(-3) : 'MISSING',
-        pass: emailConfig.auth?.pass ? '***' + emailConfig.auth.pass.slice(-3) : 'MISSING'
-      });
+        hasUser: !!emailConfig.auth?.user,
+        hasPass: !!emailConfig.auth?.pass
+      })}`);
+      
+      if (strapi?.log) {
+        strapi.log.info('🔍 Email Config Debug:', {
+          provider: emailConfig.provider,
+          host: emailConfig.host,
+          port: emailConfig.port,
+          user: emailConfig.auth?.user ? '***' + emailConfig.auth.user.slice(-3) : 'MISSING',
+          pass: emailConfig.auth?.pass ? '***' + emailConfig.auth.pass.slice(-3) : 'MISSING'
+        });
+      }
       
       if (!emailConfig.provider || emailConfig.provider === 'none') {
-        strapi.log.info('Email service disabled - no provider configured');
+        this.debugInfo.push('NO_PROVIDER');
+        if (strapi?.log) strapi.log.info('Email service disabled - no provider configured');
         return;
       }
 
       // Force configuration if environment variables are present
       if (emailConfig.provider === 'smtp' && emailConfig.host && emailConfig.auth?.user && emailConfig.auth?.pass) {
         try {
+          this.debugInfo.push('CREATING_TRANSPORTER');
+          
           // Create transporter with direct nodemailer config
           const transporterConfig = {
             host: emailConfig.host,
@@ -46,31 +64,43 @@ class EmailService {
             }
           };
           
-          strapi.log.info('🔧 Creating direct transporter:', {
+          this.debugInfo.push(`TRANSPORTER_CONFIG: ${JSON.stringify({
             host: transporterConfig.host,
             port: transporterConfig.port,
             secure: transporterConfig.secure,
-            user: transporterConfig.auth.user ? 'SET' : 'MISSING'
-          });
+            hasUser: !!transporterConfig.auth.user
+          })}`);
           
           this.transporter = nodemailer.createTransporter(transporterConfig);
           this.isConfigured = true;
-          strapi.log.info(`🚀 Email service DIRECT CONFIGURED with ${emailConfig.provider}`);
+          this.debugInfo.push('SUCCESS');
+          
+          if (strapi?.log) {
+            strapi.log.info(`🚀 Email service DIRECT CONFIGURED with ${emailConfig.provider}`);
+          }
         } catch (transporterError) {
-          strapi.log.error('❌ Direct transporter creation failed:', transporterError);
+          this.debugInfo.push(`TRANSPORTER_ERROR: ${transporterError.message}`);
+          if (strapi?.log) strapi.log.error('❌ Direct transporter creation failed:', transporterError);
           this.isConfigured = false;
         }
       } else {
-        strapi.log.error('❌ Missing required email configuration:', {
+        this.debugInfo.push('MISSING_CONFIG');
+        const missingConfig = {
           provider: emailConfig.provider,
           host: !!emailConfig.host,
           user: !!emailConfig.auth?.user,
           pass: !!emailConfig.auth?.pass
-        });
+        };
+        this.debugInfo.push(`MISSING_DETAILS: ${JSON.stringify(missingConfig)}`);
+        
+        if (strapi?.log) {
+          strapi.log.error('❌ Missing required email configuration:', missingConfig);
+        }
         this.isConfigured = false;
       }
     } catch (error) {
-      strapi.log.error('❌ Email service initialization failed:', error);
+      this.debugInfo.push(`INIT_ERROR: ${error.message}`);
+      if (strapi?.log) strapi.log.error('❌ Email service initialization failed:', error);
       this.isConfigured = false;
     }
   }
@@ -83,8 +113,8 @@ class EmailService {
       smtp: {
         provider: 'smtp',
         host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true',
+        port: parseInt(process.env.SMTP_PORT) || 465,
+        secure: process.env.SMTP_SECURE === 'true' || parseInt(process.env.SMTP_PORT) === 465,
         auth: {
           user: process.env.SMTP_USERNAME || process.env.SMTP_USER,
           pass: process.env.SMTP_PASSWORD || process.env.SMTP_PASS
@@ -421,7 +451,8 @@ class EmailService {
     return {
       isConfigured: this.isConfigured,
       provider: this.getEmailConfig().provider,
-      ready: this.transporter !== null
+      ready: this.transporter !== null,
+      debugInfo: this.debugInfo || []
     };
   }
 }
