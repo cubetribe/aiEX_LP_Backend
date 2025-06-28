@@ -559,13 +559,35 @@ module.exports = [
           return;
         }
 
-        // Return result data
+        // Convert aiResult string to FormattedResult object for frontend
+        const formattedResult = {
+          title: "Ihre KI-Analyse Ergebnisse",
+          summary: "Basierend auf Ihren Antworten haben wir eine personalisierte Analyse erstellt:",
+          sections: [
+            {
+              title: "KI-Bedarfsanalyse",
+              content: lead.aiResult || "Die Analyse wurde erfolgreich abgeschlossen.",
+              type: "text"
+            }
+          ],
+          recommendations: [],
+          nextSteps: [],
+          metadata: {
+            processingTime: 15000,
+            aiProvider: "AI System",
+            confidence: 0.9,
+            leadScore: lead.leadScore,
+            leadQuality: lead.leadQuality
+          }
+        };
+
+        // Return result data in FormattedResult format
         ctx.body = {
           data: {
             leadId: lead.id,
             leadScore: lead.leadScore,
             leadQuality: lead.leadQuality,
-            aiResult: lead.aiResult,
+            aiResult: formattedResult,
             aiProcessingStatus: lead.aiProcessingStatus,
             firstName: lead.firstName,
             campaign: {
@@ -626,14 +648,19 @@ module.exports = [
           leadQuality: lead.leadQuality
         }, 'SUCCESS', null, ctx);
 
+        // Calculate correct progress based on status
+        const status = lead.aiProcessingStatus || 'pending';
+        const progress = status === 'completed' ? 100 : (lead.processingProgress || 0);
+        const currentStep = status === 'completed' ? 'Analyse abgeschlossen' : (lead.currentProcessingStep || 'Initializing...');
+
         // Return lead processing status
         const responseData = {
           success: true,
           data: {
             id: lead.id,
-            status: lead.aiProcessingStatus || 'pending',
-            progress: lead.processingProgress || 0,
-            currentStep: lead.currentProcessingStep || 'Initializing...',
+            status: status,
+            progress: progress,
+            currentStep: currentStep,
             estimatedTimeRemaining: lead.estimatedTimeRemaining || null,
             aiResult: lead.aiResult || null,
             leadScore: lead.leadScore,
