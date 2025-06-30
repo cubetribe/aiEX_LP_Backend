@@ -182,7 +182,7 @@ module.exports = [
     path: '/campaigns/:id/submit',
     handler: async (ctx) => {
       const { id } = ctx.params;
-      const { firstName, email, responses } = ctx.request.body;
+      const { firstName, email, responses, gdprConsent } = ctx.request.body;
 
       try {
         // Set CORS headers manually
@@ -194,32 +194,74 @@ module.exports = [
           ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         }
 
-        // SIMPLE DIRECT PROCESSING - NO COMPLEX REDIRECT
-        strapi.log.info(`💥 DIRECT processing for campaign ID: ${id}`);
+        // Validate required fields
+        if (!firstName || !email) {
+          ctx.status = 400;
+          ctx.body = { 
+            status: 400,
+            message: 'firstName and email are required',
+            details: { firstName: !!firstName, email: !!email }
+          };
+          return;
+        }
+
+        // Check if campaign exists
+        const campaignId = parseInt(id);
+        const campaign = await strapi.entityService.findOne('api::campaign.campaign', campaignId);
         
-        // Just process the lead directly with the ID - skip all the lookup mess
+        if (!campaign) {
+          ctx.status = 404;
+          ctx.body = { 
+            status: 404,
+            message: 'Campaign not found or inactive',
+            details: { campaignId, exists: false }
+          };
+          return;
+        }
+
+        if (!campaign.isActive) {
+          ctx.status = 404;
+          ctx.body = { 
+            status: 404,
+            message: 'Campaign not found or inactive',
+            details: { campaignId, exists: true, isActive: false }
+          };
+          return;
+        }
+
+        strapi.log.info(`💥 Processing lead for campaign ID: ${campaignId}`);
+        
+        // Process the lead
         const lead = await strapi.service('api::lead.lead').processLeadSubmission({
           firstName,
           email,
           responses: responses || {},
-          campaign: parseInt(id)
+          gdprConsent: gdprConsent || true,
+          campaign: campaignId
         });
 
-        strapi.log.info(`✅ Lead submitted successfully: ${email} to campaign ID ${id}`);
+        strapi.log.info(`✅ Lead submitted successfully: ${email} to campaign ID ${campaignId}`);
 
         ctx.body = { 
+          success: true,
           data: {
             id: lead.id,
+            leadId: lead.id,
             leadScore: lead.leadScore,
             leadQuality: lead.leadQuality,
-            message: 'Lead submitted successfully'
+            message: 'Lead submitted successfully',
+            status: lead.aiProcessingStatus || 'pending'
           }
         };
         
       } catch (error) {
-        strapi.log.error('Error in ID route redirect:', error);
+        strapi.log.error('Error in campaign submit route:', error);
         ctx.status = 500;
-        ctx.body = { error: 'Failed to submit lead' };
+        ctx.body = { 
+          status: 500,
+          message: 'Failed to submit lead',
+          error: error.message 
+        };
       }
     },
     config: {
@@ -1057,6 +1099,12 @@ Gib die optimierte Konfiguration als VOLLSTÄNDIGES JSON aus.`
           sort: 'id:asc'
         });
 
+        // Get all registered routes
+        const registeredRoutes = strapi.server.routes();
+        const campaignRoutes = registeredRoutes
+          .filter(r => r.path && r.path.includes('campaign'))
+          .map(r => ({ method: r.method, path: r.path }));
+
         ctx.body = {
           success: true,
           data: {
@@ -1069,7 +1117,8 @@ Gib die optimierte Konfiguration als VOLLSTÄNDIGES JSON aus.`
             routes: {
               bySlug: campaigns.map(c => `/campaigns/${c.slug}/submit`),
               byId: campaigns.map(c => `/campaigns/${c.id}/submit`)
-            }
+            },
+            registeredCampaignRoutes: campaignRoutes
           }
         };
       } catch (error) {
