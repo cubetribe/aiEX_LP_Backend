@@ -37,6 +37,8 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
    * Enhanced process lead submission with conditional scoring
    */
   async processLeadSubmission(data) {
+    let lead = null; // Define lead in outer scope for error handling
+    
     try {
       console.log('--- 🎯 CHECKPOINT 1: processLeadSubmission STARTED ---');
       console.log('--- Input data:', JSON.stringify(data, null, 2));
@@ -84,7 +86,7 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
 
       console.log('--- 🎯 CHECKPOINT 6: Creating lead in database ---');
       // Create lead with calculated values
-      const lead = await strapi.entityService.create('api::lead.lead', {
+      lead = await strapi.entityService.create('api::lead.lead', {
         data: leadDataToSave,
         populate: ['campaign']
       });
@@ -183,12 +185,14 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
         
       } catch (error) {
         console.log('--- 🚨 PROCESSING ERROR ---', error);
-        strapi.log.error(`❌ AI processing failed for lead ${lead.id}:`, error);
+        strapi.log.error(`❌ AI processing failed for lead ${lead?.id || 'unknown'}:`, error);
         
-        // Mark lead as failed
-        await strapi.entityService.update('api::lead.lead', lead.id, {
-          data: { aiProcessingStatus: 'failed' }
-        });
+        // Mark lead as failed if it exists
+        if (lead && lead.id) {
+          await strapi.entityService.update('api::lead.lead', lead.id, {
+            data: { aiProcessingStatus: 'failed' }
+          });
+        }
       }
       
       console.log('--- 🎯 CHECKPOINT 11: Lead submission completed - processing in background ---');
@@ -381,12 +385,12 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
     let config = campaignData?.config || {};
     
     // Merge jsonCode if present (for bot-generated configs)
-    if (campaignData?.jsonCode && campaignData.jsonCode.trim()) {
+    // jsonCode is now a JSON field, not text
+    if (campaignData?.jsonCode && typeof campaignData.jsonCode === 'object') {
       try {
-        const jsonConfig = JSON.parse(campaignData.jsonCode);
-        config = { ...config, ...jsonConfig };
+        config = { ...config, ...campaignData.jsonCode };
       } catch (error) {
-        strapi.log.error('Invalid JSON in campaign jsonCode:', error);
+        strapi.log.error('Error merging jsonCode config:', error);
       }
     }
 
