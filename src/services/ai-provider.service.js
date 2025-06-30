@@ -144,15 +144,10 @@ class AIProviderService {
       model = 'gpt-4o'; // Default to GPT-4o for good balance of quality/cost
     }
     
-    // Map model names if needed
-    const modelMapping = {
-      'gpt-4.5': 'gpt-4-turbo-preview', // GPT-4.5 might not exist yet
-      'o3': 'gpt-4o' // O3 might not be available
-    };
+    // Use exact model names - no mapping!
+    const apiModel = model;
     
-    const apiModel = modelMapping[model] || model;
-    
-    strapi.log.info(`🤖 OpenAI model mapping: ${model} -> ${apiModel}`);
+    strapi.log.info(`🤖 OpenAI model: ${apiModel}`);
 
     const completion = await this.providers.openai.chat.completions.create({
       model: apiModel,
@@ -190,21 +185,13 @@ class AIProviderService {
 
     // Auto-select model if not specified
     if (model === 'auto') {
-      model = 'claude-sonnet-4-20250514'; // Default to Claude 4 Sonnet
+      model = 'claude-3.7-opus'; // Default to Claude 3.7 Opus
     }
     
-    // Map our schema models to actual API model names
-    const modelMapping = {
-      'claude-3.7-opus': 'claude-3-opus-20240229', // Claude 3.7 uses Claude 3 API name
-      'claude-3.7-sonnet': 'claude-3-5-sonnet-20241022', // Claude 3.7 uses Claude 3.5 API name
-      'claude-4-sonnet': 'claude-sonnet-4-20250514', // Claude 4 Sonnet
-      'claude-3-opus': 'claude-3-opus-20240229', // Direct mapping
-      'claude-3-5-sonnet': 'claude-3-5-sonnet-20241022' // Direct mapping
-    };
+    // Use exact model names - no mapping!
+    const apiModel = model;
     
-    const apiModel = modelMapping[model] || model;
-    
-    strapi.log.info(`🎭 Anthropic model mapping: ${model} -> ${apiModel}`);
+    strapi.log.info(`🎭 Anthropic model: ${apiModel}`);
 
     const message = await this.providers.anthropic.messages.create({
       model: apiModel,
@@ -239,20 +226,13 @@ class AIProviderService {
 
     // Auto-select model if not specified
     if (model === 'auto') {
-      model = 'gemini-2.0-flash-exp'; // Default to Gemini 2.0 Flash Experimental
+      model = 'gemini-2.5-pro'; // Default to Gemini 2.5 Pro
     }
     
-    // Map model names to correct Gemini API names
-    const modelMapping = {
-      'gemini-2.5-pro': 'gemini-2.0-flash-exp', // Gemini 2.5 is not yet available, use 2.0
-      'gemini-2.5-flash': 'gemini-2.0-flash-exp',
-      'gemini-1.5-pro': 'gemini-1.5-pro-latest',
-      'gemini-1.5-flash': 'gemini-1.5-flash-latest'
-    };
+    // Use exact model names - no mapping!
+    const apiModel = model;
     
-    const apiModel = modelMapping[model] || model;
-    
-    strapi.log.info(`🌟 Gemini model mapping: ${model} -> ${apiModel}`);
+    strapi.log.info(`🌟 Gemini model: ${apiModel}`);
 
     const genModel = this.providers.gemini.getGenerativeModel({ model: apiModel });
     
