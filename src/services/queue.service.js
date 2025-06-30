@@ -61,6 +61,11 @@ class QueueService {
       this.isInitialized = true;
       const queueType = this.useRedis ? 'Redis' : 'in-memory';
       this.strapi.log.info(`✅ Queue service initialized successfully with ${queueType} queues`);
+      
+      // For in-memory queues, start a periodic job processor
+      if (!this.useRedis) {
+        this.startInMemoryJobProcessor();
+      }
 
     } catch (error) {
       this.strapi.log.error('❌ Failed to initialize Queue service:', error);
@@ -244,6 +249,13 @@ class QueueService {
 
       process(jobType, concurrency, processor) {
         inMemoryQueue.processors.set(jobType, processor);
+        
+        // Process any pending jobs immediately
+        inMemoryQueue.jobs.forEach((job) => {
+          if (job.type === jobType && job.status === 'waiting' && !inMemoryQueue.paused) {
+            setImmediate(() => inMemoryQueue.processJob(job));
+          }
+        });
       },
 
       async processJob(job) {
@@ -926,6 +938,12 @@ class QueueService {
 
       this.queues.clear();
       this.isInitialized = false;
+      
+      // Stop in-memory job processor if running
+      if (this.jobProcessorInterval) {
+        clearInterval(this.jobProcessorInterval);
+        this.strapi.log.info('✅ In-memory job processor stopped');
+      }
 
       this.strapi.log.info('✅ All queues closed successfully');
 
@@ -965,6 +983,18 @@ class QueueService {
         db: this.redisConfig?.db
       }
     };
+  }
+
+  /**
+   * Start periodic job processor for in-memory queues
+   */
+  startInMemoryJobProcessor() {
+    this.strapi.log.info('🔄 Starting in-memory job processor (checking every 2 seconds)');
+    
+    // Process jobs every 2 seconds
+    this.jobProcessorInterval = setInterval(async () => {
+      await this.processPendingInMemoryJobs();
+    }, 2000);
   }
 
   /**
