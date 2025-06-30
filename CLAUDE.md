@@ -105,9 +105,11 @@ Code/
 
 ```bash
 # Public Campaign APIs
-GET /api/campaigns/:slug              # Get campaign details
-POST /api/campaigns/:slug/submit      # Submit lead to campaign
-GET /api/campaigns/:slug/leads/:id/status  # Check processing status
+GET /campaigns/public                 # List all public campaigns
+GET /campaigns/public/:slug           # Get campaign details by slug
+POST /campaigns/public/:slug/submit   # Submit lead to campaign (slug-based)
+POST /campaigns/:id/submit            # Submit lead to campaign (ID-based)
+GET /campaigns/:slug/leads/:id/status # Check processing status
 
 # Lead Management (Admin)
 GET /api/leads                        # List all leads
@@ -220,8 +222,9 @@ Key environment variables (see .env.example):
 
 ### Production URLs
 - **Backend (Railway)**: https://web-production-6df54.up.railway.app
-- **Frontend (Vercel)**: https://aiex-quiz-platform-[hash]-cubetribes-projects.vercel.app
-- **Latest Deployment**: https://aiex-quiz-platform-fmsq1hijz-cubetribes-projects.vercel.app
+- **Frontend (Vercel Production)**: https://aiex-quiz-platform.vercel.app
+- **Frontend (Vercel with Hash)**: https://aiex-quiz-platform-[hash]-cubetribes-projects.vercel.app
+- **Latest Deployment**: https://aiex-quiz-platform-p95rbzznb-cubetribes-projects.vercel.app
 
 ### Deployment Details
 - **Backend**: Automatisch via GitHub → Railway
@@ -623,7 +626,42 @@ console.log('🔧 Admin extensions temporarily disabled for deployment stability
 - Translations für UI-Texte konfiguriert
 
 ---
-Stand: 29.06.2025 00:45 CET - Frontend ✅, AI Prompt Tester ✅, Admin Panel 500 Error ❌
+## 🔧 PHASE 4 - CORS & ROUTING FIXES (Stand: 30.06.2025 18:00 CET)
+
+### PROBLEM: Lead Submission schlug fehl
+- Frontend nutzte `/campaigns/3/submit` (ID-basiert)
+- Backend erwartete numerische ID, Frontend sendete Slug
+- 404 Error "Campaign not found or inactive"
+
+### LÖSUNG 1: Neue Route hinzugefügt
+✅ `/campaigns/public/:slug/submit` - Slug-basierte Lead Submission
+```javascript
+// Frontend api.ts geändert von:
+`/campaigns/${campaignId}/submit`
+// zu:
+`/campaigns/public/${campaignId}/submit`
+```
+
+### LÖSUNG 2: Frontend Base URL aktualisiert
+✅ Hardcodierte URLs entfernt
+- Alt: `https://aiex-quiz-platform-519nmqcf0-cubetribes-projects.vercel.app`
+- Neu: `https://aiex-quiz-platform.vercel.app` (Production Domain ohne Hash)
+
+### LÖSUNG 3: CORS dynamisch konfiguriert
+✅ Alle Vercel Deployments automatisch erlaubt
+```javascript
+if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+  ctx.set('Access-Control-Allow-Origin', origin);
+}
+```
+
+### Deployment URLs
+- **Production**: https://aiex-quiz-platform.vercel.app
+- **Aktuelles Deployment**: https://aiex-quiz-platform-p95rbzznb-cubetribes-projects.vercel.app
+- **Preview URLs**: Funktionieren automatisch mit dynamischer CORS
+
+---
+Stand: 30.06.2025 18:00 CET - Frontend ✅, Backend ✅, Lead Submission ✅
 
 ---
 📝 **ZUSAMMENFASSUNG AKTUELLER STAND:**
