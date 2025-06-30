@@ -72,8 +72,8 @@ module.exports = ({ env }) => ({
       'https://www.quiz.goaiex.com',    // Production frontend with www
       'https://api.quiz.goaiex.com',    // API domain
       'https://admin.quiz.goaiex.com',  // Admin panel
-      'https://aiex-quiz-platform-skytxclkj-cubetribes-projects.vercel.app', // Current Vercel deployment
-      'https://aiex-quiz-platform-2ky3jqmb3-cubetribes-projects.vercel.app', // Latest Vercel deployment
+      'https://aiex-quiz-platform.vercel.app', // Production Vercel domain
+      'https://aiex-quiz-platform-p95rbzznb-cubetribes-projects.vercel.app', // Current deployment
       ...(env('ADDITIONAL_CORS_ORIGINS', '').split(',').filter(Boolean))
     ],
     credentials: true,
