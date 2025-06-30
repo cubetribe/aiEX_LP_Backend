@@ -14,6 +14,12 @@ module.exports = {
   async beforeCreate(event) {
     const { data } = event.params;
     
+    // Ensure aiProvider is always set to 'auto'
+    if (!data.aiProvider || data.aiProvider !== 'auto') {
+      data.aiProvider = 'auto';
+      strapi.log.info('✅ AI Provider set to auto mode');
+    }
+    
     // VALIDATE CONFIG JSON - Prevent invalid configurations
     if (data.config && data.campaignType) {
       const validation = validateCampaignConfig(data.config, data.campaignType);
@@ -61,6 +67,12 @@ module.exports = {
       // Skip validation if no data
       if (!data) {
         return;
+      }
+      
+      // Ensure aiProvider is always set to 'auto' if provided
+      if (data.aiProvider && data.aiProvider !== 'auto') {
+        data.aiProvider = 'auto';
+        strapi.log.info('✅ AI Provider set to auto mode on update');
       }
       
       // Log update info for debugging
@@ -190,21 +202,14 @@ module.exports = {
     // Validate AI model matches provider
     if (result.aiModel && result.aiProvider && result.aiProvider !== 'auto') {
       const modelProviderMap = {
-        'gpt-4.1': 'openai',
-        'gpt-4.1-mini': 'openai',
         'gpt-4o': 'openai',
-        'gpt-4o-mini': 'openai', 
-        'gpt-3.5-turbo': 'openai',
-        'claude-opus-4': 'anthropic',
-        'claude-sonnet-4': 'anthropic',
+        'gpt-4.5': 'openai',
+        'o3': 'openai',
+        'claude-3.7-opus': 'anthropic',
         'claude-3.7-sonnet': 'anthropic',
-        'claude-3.5-sonnet': 'anthropic',
-        'claude-3.5-haiku': 'anthropic',
+        'claude-4-sonnet': 'anthropic',
         'gemini-2.5-pro': 'gemini',
-        'gemini-2.5-flash': 'gemini',
-        'gemini-2.0-flash': 'gemini',
-        'gemini-1.5-pro': 'gemini',
-        'gemini-1.5-flash': 'gemini'
+        'gemini-2.5-flash': 'gemini'
       };
       
       const expectedProvider = modelProviderMap[result.aiModel];

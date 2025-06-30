@@ -143,9 +143,18 @@ class AIProviderService {
     if (model === 'auto') {
       model = 'gpt-4o'; // Default to GPT-4o for good balance of quality/cost
     }
+    
+    // Map our schema models to actual API model names
+    const modelMapping = {
+      'gpt-4o': 'gpt-4o',
+      'gpt-4.5': 'gpt-4-turbo', // GPT-4.5 might not exist yet, map to turbo
+      'o3': 'gpt-4o' // O3 might not exist yet, map to 4o
+    };
+    
+    const apiModel = modelMapping[model] || model;
 
     const completion = await this.providers.openai.chat.completions.create({
-      model,
+      model: apiModel,
       messages: [
         {
           role: "system",
@@ -165,9 +174,9 @@ class AIProviderService {
     // Calculate cost (approximate pricing)
     const inputTokens = completion.usage.prompt_tokens;
     const outputTokens = completion.usage.completion_tokens;
-    const cost = this.calculateOpenAICost(model, inputTokens, outputTokens);
+    const cost = this.calculateOpenAICost(apiModel, inputTokens, outputTokens);
 
-    return { response, cost, model };
+    return { response, cost, model: apiModel };
   }
 
   /**
@@ -182,9 +191,18 @@ class AIProviderService {
     if (model === 'auto') {
       model = 'claude-3-5-sonnet-20241022'; // Default to Sonnet for good balance
     }
+    
+    // Map our schema models to actual API model names
+    const modelMapping = {
+      'claude-3.7-opus': 'claude-3-opus-20240229', // Map to latest Opus
+      'claude-3.7-sonnet': 'claude-3-5-sonnet-20241022', // Map to latest Sonnet
+      'claude-4-sonnet': 'claude-3-5-sonnet-20241022' // Claude 4 doesn't exist yet
+    };
+    
+    const apiModel = modelMapping[model] || model;
 
     const message = await this.providers.anthropic.messages.create({
-      model,
+      model: apiModel,
       max_tokens: 1000,
       temperature: 0.7,
       system: "Du bist ein Experte für personalisierte AI-Empfehlungen. Erstelle präzise, hilfreiche und professionelle Antworten basierend auf den Benutzerdaten.",
@@ -201,9 +219,9 @@ class AIProviderService {
     // Calculate cost (approximate pricing)
     const inputTokens = message.usage.input_tokens;
     const outputTokens = message.usage.output_tokens;
-    const cost = this.calculateAnthropicCost(model, inputTokens, outputTokens);
+    const cost = this.calculateAnthropicCost(apiModel, inputTokens, outputTokens);
 
-    return { response, cost, model };
+    return { response, cost, model: apiModel };
   }
 
   /**
@@ -216,10 +234,18 @@ class AIProviderService {
 
     // Auto-select model if not specified
     if (model === 'auto') {
-      model = 'gemini-1.5-flash'; // Default to Flash for speed/cost
+      model = 'gemini-1.5-pro'; // Default to Pro for better quality
     }
+    
+    // Map our schema models to actual API model names
+    const modelMapping = {
+      'gemini-2.5-pro': 'gemini-1.5-pro', // 2.5 doesn't exist yet
+      'gemini-2.5-flash': 'gemini-1.5-flash' // 2.5 doesn't exist yet
+    };
+    
+    const apiModel = modelMapping[model] || model;
 
-    const genModel = this.providers.gemini.getGenerativeModel({ model });
+    const genModel = this.providers.gemini.getGenerativeModel({ model: apiModel });
     
     const enhancedPrompt = `Du bist ein Experte für personalisierte AI-Empfehlungen. Erstelle präzise, hilfreiche und professionelle Antworten basierend auf den Benutzerdaten.
 
@@ -229,9 +255,9 @@ ${prompt}`;
     const response = result.response.text();
     
     // Calculate cost (approximate - Gemini pricing is complex)
-    const cost = this.calculateGeminiCost(model, prompt.length, response.length);
+    const cost = this.calculateGeminiCost(apiModel, prompt.length, response.length);
 
-    return { response, cost, model };
+    return { response, cost, model: apiModel };
   }
 
   /**
@@ -371,7 +397,9 @@ ${prompt}`;
       'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
       'gpt-4-turbo': { input: 0.003, output: 0.012 },
       'gpt-4': { input: 0.003, output: 0.006 },
-      'gpt-3.5-turbo': { input: 0.0005, output: 0.0015 }
+      'gpt-3.5-turbo': { input: 0.0005, output: 0.0015 },
+      'o3': { input: 0.003, output: 0.012 }, // Estimate based on GPT-4 pricing
+      'gpt-4.5': { input: 0.003, output: 0.012 } // Estimate
     };
 
     const rates = pricing[model] || pricing['gpt-4o'];
@@ -385,7 +413,10 @@ ${prompt}`;
     const pricing = {
       'claude-3-5-sonnet-20241022': { input: 0.003, output: 0.015 },
       'claude-3-opus-20240229': { input: 0.015, output: 0.075 },
-      'claude-3-haiku-20240307': { input: 0.00025, output: 0.00125 }
+      'claude-3-haiku-20240307': { input: 0.00025, output: 0.00125 },
+      'claude-3.7-opus': { input: 0.015, output: 0.075 }, // Same as current opus
+      'claude-3.7-sonnet': { input: 0.003, output: 0.015 }, // Same as current sonnet
+      'claude-4-sonnet': { input: 0.004, output: 0.02 } // Estimate for future model
     };
 
     const rates = pricing[model] || pricing['claude-3-5-sonnet-20241022'];
@@ -402,10 +433,12 @@ ${prompt}`;
     
     const pricing = {
       'gemini-1.5-pro': { input: 0.00125, output: 0.005 },
-      'gemini-1.5-flash': { input: 0.000075, output: 0.0003 }
+      'gemini-1.5-flash': { input: 0.000075, output: 0.0003 },
+      'gemini-2.5-pro': { input: 0.002, output: 0.008 }, // Estimate for future model
+      'gemini-2.5-flash': { input: 0.0001, output: 0.0004 } // Estimate
     };
 
-    const rates = pricing[model] || pricing['gemini-1.5-flash'];
+    const rates = pricing[model] || pricing['gemini-1.5-pro'];
     return (approxInputTokens / 1000 * rates.input) + (approxOutputTokens / 1000 * rates.output);
   }
 
@@ -451,11 +484,19 @@ ${prompt}`;
       const processedPrompt = this.processPromptTemplate(promptTemplate, data);
       
       // Determine which provider to use
-      let provider = options.provider || 'openai'; // Default to OpenAI
+      let provider = options.provider || 'auto'; // Default to auto
       const model = options.model || 'auto';
       
-      // Check if provider is configured
-      if (!this.isConfigured[provider]) {
+      // Handle auto provider selection
+      if (provider === 'auto') {
+        const providerOrder = ['openai', 'anthropic', 'gemini'];
+        const availableProviders = providerOrder.filter(p => this.isConfigured[p]);
+        if (availableProviders.length === 0) {
+          throw new Error('No AI providers configured');
+        }
+        provider = availableProviders[0];
+        strapi.log.info(`Auto-selected provider: ${provider}`);
+      } else if (!this.isConfigured[provider]) {
         // Fallback to any available provider
         const availableProviders = Object.keys(this.isConfigured).filter(p => this.isConfigured[p]);
         if (availableProviders.length === 0) {
