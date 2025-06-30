@@ -569,14 +569,28 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
     try {
       console.log('--- 🎯 AI CHECKPOINT C1: generateRealAIResult started ---');
       console.log('--- 🎯 AI CHECKPOINT C2: Loading AI provider service ---');
-      const aiProviderService = require('../../../services/ai-provider.service');
+      const AIProviderService = require('../../../services/ai-provider.service');
+      
+      // Create instance if needed
+      let aiProviderService;
+      if (AIProviderService.generateContent) {
+        // It's already an instance
+        aiProviderService = AIProviderService;
+      } else {
+        // It's a class, need to instantiate
+        aiProviderService = new AIProviderService();
+      }
+      
       console.log('--- 🎯 AI CHECKPOINT C3: AI provider service loaded successfully ---');
+      console.log('--- AI Service type:', typeof aiProviderService);
+      console.log('--- AI Service methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(aiProviderService || {})));
       
       console.log('--- 🎯 AI CHECKPOINT C4: Checking AI service availability ---');
       if (!aiProviderService || !campaignData.aiPromptTemplate) {
         console.log('--- 🎯 AI CHECKPOINT C5: AI service or prompt template not available ---');
         console.log('--- AI Service available:', !!aiProviderService);
         console.log('--- Prompt template available:', !!campaignData.aiPromptTemplate);
+        console.log('--- Prompt template:', campaignData.aiPromptTemplate?.substring(0, 100) + '...');
         return null;
       }
       console.log('--- 🎯 AI CHECKPOINT C6: AI service and prompt template available ---');
@@ -604,12 +618,22 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
         }
       );
       console.log('--- 🎯 AI CHECKPOINT C8: AI provider service call completed ---');
+      console.log('--- AI Result:', {
+        hasResult: !!aiResult,
+        hasContent: !!(aiResult && aiResult.content),
+        resultType: typeof aiResult,
+        resultKeys: aiResult ? Object.keys(aiResult) : [],
+        contentLength: aiResult && aiResult.content ? aiResult.content.length : 0,
+        provider: aiResult?.provider,
+        model: aiResult?.model
+      });
       
       if (aiResult && aiResult.content) {
-        strapi.log.info(`🤖 Real AI result generated for lead ${lead.id}`);
+        strapi.log.info(`🤖 Real AI result generated for lead ${lead.id} using ${aiResult.provider}/${aiResult.model}`);
         return aiResult.content;
       }
       
+      console.log('--- 🎯 AI CHECKPOINT C9: No valid AI result, returning null ---');
       return null;
       
     } catch (error) {
