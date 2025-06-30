@@ -54,8 +54,13 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
       console.log('--- 🎯 CHECKPOINT 2: Fetching campaign data ---');
       // Get campaign for conditional scoring
       const campaignData = await strapi.entityService.findOne('api::campaign.campaign', data.campaign, {
-        fields: ['config', 'jsonCode', 'resultDeliveryMode']
+        fields: ['config', 'jsonCode', 'resultDeliveryMode', 'aiPromptTemplate', 'aiProvider', 'aiModel']
       });
+      
+      if (!campaignData) {
+        throw new Error(`Campaign ${data.campaign} not found`);
+      }
+      
       console.log('--- 🎯 CHECKPOINT 3: Campaign data retrieved ---');
 
       console.log('--- 🎯 CHECKPOINT 4: Calculating lead score ---');
@@ -64,13 +69,18 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
       console.log('--- 🎯 CHECKPOINT 5: Lead score calculated:', { leadScore, leadQuality });
 
       // DEBUG: Log before database save
+      // Ensure responses is a proper object
+      const responses = data.responses || {};
       const leadDataToSave = {
         ...data,
         leadScore,
         leadQuality,
-        responses: data.responses || {}
+        responses: typeof responses === 'string' ? JSON.parse(responses) : responses
       };
-      strapi.log.info('🔍 Lead Data to Save:', leadDataToSave);
+      strapi.log.info('🔍 Lead Data to Save:', {
+        ...leadDataToSave,
+        responsesType: typeof leadDataToSave.responses
+      });
 
       console.log('--- 🎯 CHECKPOINT 6: Creating lead in database ---');
       // Create lead with calculated values
@@ -113,14 +123,24 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
           } catch (queueError) {
             strapi.log.error('Queue error, falling back to immediate processing:', queueError);
             // Fallback to immediate processing if queue fails
-            const processedLead = await this.processLeadWithAI(lead.id);
-            strapi.log.info(`✅ AI processing completed immediately for lead ${lead.id}`);
+            try {
+              const processedLead = await this.processLeadWithAI(lead.id);
+              strapi.log.info(`✅ AI processing completed immediately for lead ${lead.id}`);
+            } catch (processError) {
+              strapi.log.error(`Failed to process lead ${lead.id} immediately:`, processError);
+              // Don't throw - let the lead exist in pending state
+            }
           }
         } else {
           // No queue available, process immediately
           strapi.log.warn('Queue service not available, processing immediately');
-          const processedLead = await this.processLeadWithAI(lead.id);
-          strapi.log.info(`✅ AI processing completed immediately for lead ${lead.id}`);
+          try {
+            const processedLead = await this.processLeadWithAI(lead.id);
+            strapi.log.info(`✅ AI processing completed immediately for lead ${lead.id}`);
+          } catch (processError) {
+            strapi.log.error(`Failed to process lead ${lead.id} immediately:`, processError);
+            // Don't throw - let the lead exist in pending state
+          }
         }
         
         // BACKGROUND JOBS - Analytics and export (non-blocking)
@@ -154,12 +174,29 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
       }
       
       console.log('--- 🎯 CHECKPOINT 11: Lead submission completed - processing in background ---');
+      
+      // Return the lead even if AI processing is pending
       return lead;
     } catch (error) {
       console.log('--- 🚨 CRITICAL ERROR - CRASH POINT FOUND ---');
       console.log('--- Error details:', error);
       console.log('--- Stack trace:', error.stack);
       strapi.log.error('Error processing lead submission:', error);
+      
+      // If we have a lead ID, try to update its status to failed
+      if (lead && lead.id) {
+        try {
+          await strapi.entityService.update('api::lead.lead', lead.id, {
+            data: { aiProcessingStatus: 'failed' }
+          });
+        } catch (updateError) {
+          strapi.log.error('Failed to update lead status after error:', updateError);
+        }
+        // Return the lead even with error
+        return lead;
+      }
+      
+      // Only throw if we couldn't create the lead at all
       throw error;
     }
   },
@@ -569,21 +606,13 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
     try {
       console.log('--- 🎯 AI CHECKPOINT C1: generateRealAIResult started ---');
       console.log('--- 🎯 AI CHECKPOINT C2: Loading AI provider service ---');
-      const AIProviderService = require('../../../services/ai-provider.service');
       
-      // Create instance if needed
-      let aiProviderService;
-      if (AIProviderService.generateContent) {
-        // It's already an instance
-        aiProviderService = AIProviderService;
-      } else {
-        // It's a class, need to instantiate
-        aiProviderService = new AIProviderService();
-      }
+      // AI provider service is exported as a singleton instance
+      const aiProviderService = require('../../../services/ai-provider.service');
       
       console.log('--- 🎯 AI CHECKPOINT C3: AI provider service loaded successfully ---');
       console.log('--- AI Service type:', typeof aiProviderService);
-      console.log('--- AI Service methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(aiProviderService || {})));
+      console.log('--- AI Service has generateContent:', typeof aiProviderService.generateContent === 'function');
       
       console.log('--- 🎯 AI CHECKPOINT C4: Checking AI service availability ---');
       if (!aiProviderService || !campaignData.aiPromptTemplate) {
@@ -606,6 +635,13 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
       
       console.log('--- 🎯 AI CHECKPOINT C7: Calling AI provider service ---');
       console.log('--- AI Context:', JSON.stringify(aiContext, null, 2));
+      
+      // Check if generateContent method exists
+      if (typeof aiProviderService.generateContent !== 'function') {
+        console.log('--- 🚨 AI Service does not have generateContent method ---');
+        throw new Error('AI Provider Service is not properly initialized');
+      }
+      
       // Generate AI result
       const aiResult = await aiProviderService.generateContent(
         campaignData.aiPromptTemplate,

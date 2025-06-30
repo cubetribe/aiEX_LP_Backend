@@ -168,8 +168,18 @@ module.exports = [
         };
       } catch (error) {
         strapi.log.error('Error submitting lead via public route:', error);
+        strapi.log.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          slug: slug,
+          requestBody: ctx.request.body
+        });
         ctx.status = 500;
-        ctx.body = { error: 'Failed to submit lead' };
+        ctx.body = { 
+          error: 'Failed to submit lead',
+          message: error.message || 'An unexpected error occurred',
+          details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        };
       }
     },
     config: {
@@ -231,8 +241,18 @@ module.exports = [
         };
       } catch (error) {
         strapi.log.error('Error submitting lead:', error);
+        strapi.log.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          slug: slug,
+          requestBody: ctx.request.body
+        });
         ctx.status = 500;
-        ctx.body = { error: 'Failed to submit lead' };
+        ctx.body = { 
+          error: 'Failed to submit lead',
+          message: error.message || 'An unexpected error occurred',
+          details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        };
       }
     },
     config: {

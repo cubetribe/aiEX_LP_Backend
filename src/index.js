@@ -27,9 +27,17 @@ module.exports = {
     // Initialize AI Services
     try {
       const aiProviderService = require('./services/ai-provider.service');
-      strapi.log.info('✅ AI Provider Service initialized');
+      
+      // Verify the service is properly initialized
+      if (aiProviderService && typeof aiProviderService.generateContent === 'function') {
+        strapi.log.info('✅ AI Provider Service initialized successfully');
+        strapi.log.info(`✅ AI Providers configured: ${JSON.stringify(aiProviderService.getStatus())}`);
+      } else {
+        strapi.log.error('❌ AI Provider Service is not properly initialized - missing generateContent method');
+      }
     } catch (error) {
       strapi.log.error('❌ Error initializing AI services:', error);
+      strapi.log.error('AI Service error details:', error.stack);
     }
 
     // Initialize Email Service

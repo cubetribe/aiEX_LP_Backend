@@ -412,7 +412,22 @@ class AIProviderService {
       // Process the prompt template with data
       const processedPrompt = this.processPromptTemplate(promptTemplate, data);
       
-      const model = options.model || 'gpt-4o'; // Default model
+      let model = options.model || 'auto';
+      
+      // Handle 'auto' model selection
+      if (model === 'auto') {
+        // Find first available model
+        for (const [modelKey, info] of Object.entries(this.modelRegistry)) {
+          if (info.available && this.isConfigured[info.provider]) {
+            model = modelKey;
+            strapi.log.info(`Auto-selected model: ${model}`);
+            break;
+          }
+        }
+        if (model === 'auto') {
+          throw new Error('No AI models available. Please check API key configuration.');
+        }
+      }
       
       // 1. ANBIETER ERKENNEN aus Model Registry
       const modelInfo = this.modelRegistry[model];
@@ -470,8 +485,7 @@ class AIProviderService {
       strapi.log.error('Error details:', {
         message: error.message,
         stack: error.stack,
-        provider: provider,
-        model: model
+        options: options
       });
       throw error;
     }
