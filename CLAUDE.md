@@ -253,9 +253,9 @@ Standalone web-based tool for testing and comparing AI prompts across multiple p
 
 #### 1. Multi-Model Testing
 Select and test multiple AI models simultaneously:
-- **OpenAI**: GPT-4o, GPT-3.5-turbo
-- **Anthropic**: Claude-3-opus, Claude-3-sonnet  
-- **Google**: Gemini-1.5-pro
+- **OpenAI**: GPT-4o, GPT-4.5, O3
+- **Anthropic**: Claude-3.7-opus, Claude-3.7-sonnet, Claude-opus-4-20250514, Claude-sonnet-4-20250514
+- **Google**: Gemini-2.5-pro, Gemini-2.5-flash
 
 #### 2. Sample Data Presets
 Quiz-specific test data for realistic testing:

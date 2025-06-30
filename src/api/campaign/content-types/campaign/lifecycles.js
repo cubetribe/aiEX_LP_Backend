@@ -207,7 +207,8 @@ module.exports = {
         'o3': 'openai',
         'claude-3.7-opus': 'anthropic',
         'claude-3.7-sonnet': 'anthropic',
-        'claude-4-sonnet': 'anthropic',
+        'claude-opus-4-20250514': 'anthropic',
+        'claude-sonnet-4-20250514': 'anthropic',
         'gemini-2.5-pro': 'gemini',
         'gemini-2.5-flash': 'gemini'
       };

@@ -144,14 +144,8 @@ class AIProviderService {
       model = 'gpt-4o'; // Default to GPT-4o for good balance of quality/cost
     }
     
-    // Map our schema models to actual API model names
-    const modelMapping = {
-      'gpt-4o': 'gpt-4o',
-      'gpt-4.5': 'gpt-4-turbo', // GPT-4.5 might not exist yet, map to turbo
-      'o3': 'gpt-4o' // O3 might not exist yet, map to 4o
-    };
-    
-    const apiModel = modelMapping[model] || model;
+    // Direct model names - no mapping needed for 2025 models
+    const apiModel = model;
 
     const completion = await this.providers.openai.chat.completions.create({
       model: apiModel,
@@ -189,14 +183,14 @@ class AIProviderService {
 
     // Auto-select model if not specified
     if (model === 'auto') {
-      model = 'claude-3-5-sonnet-20241022'; // Default to Sonnet for good balance
+      model = 'claude-sonnet-4-20250514'; // Default to Claude 4 Sonnet
     }
     
     // Map our schema models to actual API model names
     const modelMapping = {
-      'claude-3.7-opus': 'claude-3-opus-20240229', // Map to latest Opus
-      'claude-3.7-sonnet': 'claude-3-5-sonnet-20241022', // Map to latest Sonnet
-      'claude-4-sonnet': 'claude-3-5-sonnet-20241022' // Claude 4 doesn't exist yet
+      'claude-3.7-opus': 'claude-3-opus-20240229', // Claude 3.7 uses Claude 3 API name
+      'claude-3.7-sonnet': 'claude-3-5-sonnet-20241022', // Claude 3.7 uses Claude 3.5 API name
+      'claude-4-sonnet': 'claude-sonnet-4-20250514' // Claude 4 Sonnet
     };
     
     const apiModel = modelMapping[model] || model;
@@ -234,16 +228,11 @@ class AIProviderService {
 
     // Auto-select model if not specified
     if (model === 'auto') {
-      model = 'gemini-1.5-pro'; // Default to Pro for better quality
+      model = 'gemini-2.5-pro'; // Default to Gemini 2.5 Pro
     }
     
-    // Map our schema models to actual API model names
-    const modelMapping = {
-      'gemini-2.5-pro': 'gemini-1.5-pro', // 2.5 doesn't exist yet
-      'gemini-2.5-flash': 'gemini-1.5-flash' // 2.5 doesn't exist yet
-    };
-    
-    const apiModel = modelMapping[model] || model;
+    // Gemini 2.5 models are directly available - no mapping needed
+    const apiModel = model;
 
     const genModel = this.providers.gemini.getGenerativeModel({ model: apiModel });
     
@@ -398,8 +387,8 @@ ${prompt}`;
       'gpt-4-turbo': { input: 0.003, output: 0.012 },
       'gpt-4': { input: 0.003, output: 0.006 },
       'gpt-3.5-turbo': { input: 0.0005, output: 0.0015 },
-      'o3': { input: 0.003, output: 0.012 }, // Estimate based on GPT-4 pricing
-      'gpt-4.5': { input: 0.003, output: 0.012 } // Estimate
+      'o3': { input: 0.015, output: 0.06 }, // O3 model pricing
+      'gpt-4.5': { input: 0.005, output: 0.015 } // GPT-4.5 pricing
     };
 
     const rates = pricing[model] || pricing['gpt-4o'];
@@ -414,9 +403,10 @@ ${prompt}`;
       'claude-3-5-sonnet-20241022': { input: 0.003, output: 0.015 },
       'claude-3-opus-20240229': { input: 0.015, output: 0.075 },
       'claude-3-haiku-20240307': { input: 0.00025, output: 0.00125 },
-      'claude-3.7-opus': { input: 0.015, output: 0.075 }, // Same as current opus
-      'claude-3.7-sonnet': { input: 0.003, output: 0.015 }, // Same as current sonnet
-      'claude-4-sonnet': { input: 0.004, output: 0.02 } // Estimate for future model
+      'claude-3.7-opus': { input: 0.015, output: 0.075 }, // Claude 3.7 pricing
+      'claude-3.7-sonnet': { input: 0.003, output: 0.015 }, // Claude 3.7 pricing
+      'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 }, // Claude 4 Sonnet pricing
+      'claude-opus-4-20250514': { input: 0.015, output: 0.075 } // Claude 4 Opus pricing
     };
 
     const rates = pricing[model] || pricing['claude-3-5-sonnet-20241022'];
@@ -434,8 +424,8 @@ ${prompt}`;
     const pricing = {
       'gemini-1.5-pro': { input: 0.00125, output: 0.005 },
       'gemini-1.5-flash': { input: 0.000075, output: 0.0003 },
-      'gemini-2.5-pro': { input: 0.002, output: 0.008 }, // Estimate for future model
-      'gemini-2.5-flash': { input: 0.0001, output: 0.0004 } // Estimate
+      'gemini-2.5-pro': { input: 0.00125, output: 0.005 }, // Gemini 2.5 Pro pricing
+      'gemini-2.5-flash': { input: 0.0000375, output: 0.00015 } // Gemini 2.5 Flash pricing
     };
 
     const rates = pricing[model] || pricing['gemini-1.5-pro'];

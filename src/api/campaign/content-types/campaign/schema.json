@@ -108,7 +108,8 @@
         "o3",
         "claude-3.7-opus",
         "claude-3.7-sonnet",
-        "claude-4-sonnet",
+        "claude-opus-4-20250514",
+        "claude-sonnet-4-20250514",
         "gemini-2.5-pro",
         "gemini-2.5-flash"
       ],
