@@ -37,7 +37,12 @@
       "type": "enumeration",
       "enum": ["quiz", "text", "image", "chatbot", "custom"],
       "default": "quiz",
-      "required": true
+      "required": true,
+      "pluginOptions": {
+        "content-manager": {
+          "label": "Kampagnen-Typ (Bestimmt das Verhalten und die verfügbaren Features)"
+        }
+      }
     },
     "status": {
       "type": "enumeration", 
@@ -68,6 +73,11 @@
           "randomizeQuestions": false,
           "conditionalLogic": false
         }
+      },
+      "pluginOptions": {
+        "content-manager": {
+          "label": "Basis-Konfiguration (Wird von Quiz-Config überschrieben wenn vorhanden)"
+        }
       }
     },
     "jsonCode": {
@@ -76,6 +86,7 @@
       "default": null,
       "pluginOptions": {
         "content-manager": {
+          "label": "Quiz-Config (Erweiterte Einstellungen für dynamische Fragen, Conditional Logic & Scoring-Regeln)",
           "description": "JSON-Konfiguration für erweiterte Campaign-Features. Überschreibt die Standard-Konfiguration.\n\nBeispiel:\n{\n  \"questions\": [...],\n  \"scoring\": { \"logic\": \"conditional\" }\n}\n\nVerfügbare Felder: questions, scoring, styling, behavior"
         }
       }
@@ -93,6 +104,7 @@
       "default": "Erstelle basierend auf den folgenden Antworten ein personalisiertes Ergebnis:\n\n{{responses}}\n\nKampagne: {{campaignTitle}}",
       "pluginOptions": {
         "content-manager": {
+          "label": "AI Prompt Template (Anweisungen für die KI zur Erstellung personalisierter Ergebnisse)",
           "description": "Prompt-Template für die AI-Generierung.\n\nVerfügbare Variablen:\n{{firstName}} - Vorname des Leads\n{{email}} - E-Mail-Adresse\n{{responses}} - Quiz-Antworten als JSON\n{{leadScore}} - Lead-Score (0-100)\n{{leadQuality}} - Lead-Qualität (hot/warm/cold)\n{{campaignTitle}} - Name der Kampagne"
         }
       }
@@ -154,7 +166,11 @@
       "type": "enumeration",
       "enum": ["show_only", "email_only", "show_and_email"],
       "default": "show_only",
-      "description": "How to deliver AI results to users"
+      "pluginOptions": {
+        "content-manager": {
+          "label": "Ergebnis-Zustellung (Wie soll das AI-Ergebnis an den Lead übermittelt werden?)"
+        }
+      }
     },
     "showResultImmediately": {
       "type": "boolean",
@@ -181,6 +197,7 @@
       },
       "pluginOptions": {
         "content-manager": {
+          "label": "Ergebnis-Anzeige Konfiguration (Steuert wie und wo das AI-Ergebnis dem Lead präsentiert wird)",
           "description": "Konfiguration der Ergebnisanzeige"
         }
       }
