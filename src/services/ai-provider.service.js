@@ -144,8 +144,15 @@ class AIProviderService {
       model = 'gpt-4o'; // Default to GPT-4o for good balance of quality/cost
     }
     
-    // Direct model names - no mapping needed for 2025 models
-    const apiModel = model;
+    // Map model names if needed
+    const modelMapping = {
+      'gpt-4.5': 'gpt-4-turbo-preview', // GPT-4.5 might not exist yet
+      'o3': 'gpt-4o' // O3 might not be available
+    };
+    
+    const apiModel = modelMapping[model] || model;
+    
+    strapi.log.info(`🤖 OpenAI model mapping: ${model} -> ${apiModel}`);
 
     const completion = await this.providers.openai.chat.completions.create({
       model: apiModel,
@@ -190,10 +197,14 @@ class AIProviderService {
     const modelMapping = {
       'claude-3.7-opus': 'claude-3-opus-20240229', // Claude 3.7 uses Claude 3 API name
       'claude-3.7-sonnet': 'claude-3-5-sonnet-20241022', // Claude 3.7 uses Claude 3.5 API name
-      'claude-4-sonnet': 'claude-sonnet-4-20250514' // Claude 4 Sonnet
+      'claude-4-sonnet': 'claude-sonnet-4-20250514', // Claude 4 Sonnet
+      'claude-3-opus': 'claude-3-opus-20240229', // Direct mapping
+      'claude-3-5-sonnet': 'claude-3-5-sonnet-20241022' // Direct mapping
     };
     
     const apiModel = modelMapping[model] || model;
+    
+    strapi.log.info(`🎭 Anthropic model mapping: ${model} -> ${apiModel}`);
 
     const message = await this.providers.anthropic.messages.create({
       model: apiModel,
@@ -228,11 +239,20 @@ class AIProviderService {
 
     // Auto-select model if not specified
     if (model === 'auto') {
-      model = 'gemini-2.5-pro'; // Default to Gemini 2.5 Pro
+      model = 'gemini-2.0-flash-exp'; // Default to Gemini 2.0 Flash Experimental
     }
     
-    // Gemini 2.5 models are directly available - no mapping needed
-    const apiModel = model;
+    // Map model names to correct Gemini API names
+    const modelMapping = {
+      'gemini-2.5-pro': 'gemini-2.0-flash-exp', // Gemini 2.5 is not yet available, use 2.0
+      'gemini-2.5-flash': 'gemini-2.0-flash-exp',
+      'gemini-1.5-pro': 'gemini-1.5-pro-latest',
+      'gemini-1.5-flash': 'gemini-1.5-flash-latest'
+    };
+    
+    const apiModel = modelMapping[model] || model;
+    
+    strapi.log.info(`🌟 Gemini model mapping: ${model} -> ${apiModel}`);
 
     const genModel = this.providers.gemini.getGenerativeModel({ model: apiModel });
     
@@ -477,6 +497,22 @@ ${prompt}`;
       let provider = options.provider || 'auto'; // Default to auto
       const model = options.model || 'auto';
       
+      // Log incoming options for debugging
+      strapi.log.info(`🤖 AI generateContent called with provider: ${provider}, model: ${model}`);
+      
+      // Map model names to providers
+      if (model && model !== 'auto') {
+        // Determine provider from model name
+        if (model.startsWith('gpt')) {
+          provider = 'openai';
+        } else if (model.startsWith('claude')) {
+          provider = 'anthropic';
+        } else if (model.startsWith('gemini')) {
+          provider = 'gemini';
+        }
+        strapi.log.info(`🎯 Determined provider ${provider} from model ${model}`);
+      }
+      
       // Handle auto provider selection
       if (provider === 'auto') {
         const providerOrder = ['openai', 'anthropic', 'gemini'];
@@ -497,6 +533,8 @@ ${prompt}`;
       }
       
       let result;
+      
+      strapi.log.info(`🚀 Calling AI provider: ${provider} with model: ${model}`);
       
       // Call the appropriate provider
       switch (provider) {
@@ -527,6 +565,8 @@ ${prompt}`;
         throw new Error('Failed to generate content with any provider');
       }
       
+      strapi.log.info(`✅ AI content generated successfully with ${provider}/${result.model}`);
+      
       // Return in the expected format
       return {
         content: result.response,
@@ -538,6 +578,12 @@ ${prompt}`;
       
     } catch (error) {
       strapi.log.error('AI content generation failed:', error);
+      strapi.log.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        provider: provider,
+        model: model
+      });
       throw error;
     }
   }
