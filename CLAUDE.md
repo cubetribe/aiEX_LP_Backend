@@ -292,6 +292,47 @@ Pre-configured templates optimized for GoAIX:
 - Responsive design with modern UI
 - Error handling with user-friendly messages
 
+## Strapi Admin Panel Integration
+
+### Content Manager Updates
+Das Strapi Admin Panel (Content Manager) sendet beim Speichern ALLE Felder einer Entity, nicht nur die geänderten. Dies unterscheidet sich von API Updates, die oft nur geänderte Felder senden.
+
+### Validation in Lifecycle Hooks
+1. **ApplicationError verwenden**: Für Fehler, die im Admin Panel angezeigt werden sollen, muss `ApplicationError` von `@strapi/utils` verwendet werden:
+```javascript
+const { ApplicationError } = require('@strapi/utils').errors;
+throw new ApplicationError('Fehlermeldung', { details: {...} });
+```
+
+2. **Config Validation**: Die Campaign config darf NICHT `title` oder `description` enthalten - diese gehören zur Campaign Entity selbst:
+```javascript
+// RICHTIG: Campaign Entity
+campaign.title = "Meine Kampagne"
+campaign.config = { questions: [...], styling: {...} }
+
+// FALSCH: Config mit title
+campaign.config = { title: "...", questions: [...] }
+```
+
+### Bekannte Probleme & Lösungen
+
+#### Problem: 400 Bad Request beim Speichern im Admin Panel
+**Ursache**: Validation Errors in lifecycle hooks
+**Lösung**: 
+- ApplicationError für User-facing Errors verwenden
+- Config Schema korrekt definieren (ohne title/description)
+- Bei Updates immer den campaignType aus der existierenden Campaign holen
+
+#### Problem: Config Validation schlägt fehl
+**Ursache**: Admin Panel sendet komplette Entity, nicht nur Änderungen
+**Lösung**: Keine komplexe "Partial Update" Detection - einfach validieren wenn config vorhanden
+
+### Debug Utilities
+- `/debug/campaigns` - Zeigt alle Campaigns mit config Status
+- `/debug/campaign/:id/validate` - Testet Campaign Validation
+- `/debug/logs` - Zeigt System Debug Logs
+- Campaign lifecycle hooks loggen Updates für Debugging
+
 ---
 
 ===================================================================
