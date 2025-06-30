@@ -100,12 +100,12 @@
     "aiPromptTemplate": {
       "type": "text",
       "required": false,
-      "maxLength": 5000,
+      "maxLength": 10000,
       "default": "Erstelle basierend auf den folgenden Antworten ein personalisiertes Ergebnis:\n\n{{responses}}\n\nKampagne: {{campaignTitle}}",
       "pluginOptions": {
         "content-manager": {
           "label": "AI Prompt Template (Anweisungen für die KI zur Erstellung personalisierter Ergebnisse)",
-          "description": "Prompt-Template für die AI-Generierung.\n\nVerfügbare Variablen:\n{{firstName}} - Vorname des Leads\n{{email}} - E-Mail-Adresse\n{{responses}} - Quiz-Antworten als JSON\n{{leadScore}} - Lead-Score (0-100)\n{{leadQuality}} - Lead-Qualität (hot/warm/cold)\n{{campaignTitle}} - Name der Kampagne"
+          "description": "Prompt-Template für die AI-Generierung (max. 10.000 Zeichen).\n\nVerfügbare Variablen:\n{{firstName}} - Vorname des Leads\n{{email}} - E-Mail-Adresse\n{{responses}} - Quiz-Antworten als JSON\n{{leadScore}} - Lead-Score (0-100)\n{{leadQuality}} - Lead-Qualität (hot/warm/cold)\n{{campaignTitle}} - Name der Kampagne"
         }
       }
     },
