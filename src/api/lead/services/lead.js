@@ -261,8 +261,21 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
             // Send email if configured
             if (deliveryMode === 'show_and_email' || deliveryMode === 'email_only') {
               try {
-                await strapi.emailService.sendLeadResult(processedLead);
-                strapi.log.info(`📧 Email sent for lead ${lead.id}`);
+                // Get the full lead data for email
+                const fullLead = await strapi.entityService.findOne('api::lead.lead', lead.id, {
+                  populate: ['campaign']
+                });
+                
+                if (strapi.emailService && typeof strapi.emailService.sendResultEmail === 'function') {
+                  const emailResult = await strapi.emailService.sendResultEmail(fullLead, fullLead.campaign, fullLead.aiResult);
+                  if (emailResult.success) {
+                    strapi.log.info(`📧 Email sent successfully for lead ${lead.id}`);
+                  } else {
+                    strapi.log.error(`📧 Email failed for lead ${lead.id}:`, emailResult.error);
+                  }
+                } else {
+                  strapi.log.error(`📧 Email service not available for lead ${lead.id}`);
+                }
               } catch (emailError) {
                 strapi.log.error(`📧 Email failed for lead ${lead.id}:`, emailError);
               }
@@ -575,8 +588,8 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
         });
       }
       
-      // Send email if required
-      if (deliveryMode === 'email_only' || deliveryMode === 'show_and_email' || resultConfig.sendEmail) {
+      // Send email if required - only check deliveryMode
+      if (deliveryMode === 'email_only' || deliveryMode === 'show_and_email') {
         await this.sendResultEmail(lead, campaignData, aiResult);
       }
       
@@ -875,15 +888,10 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
    */
   shouldSendEmail(campaignData, lead) {
     const deliveryMode = campaignData?.resultDeliveryMode || 'show_only';
-    const resultConfig = campaignData?.resultDisplayConfig || {};
     
-    // Check delivery mode
+    // Only check delivery mode - ignore sendEmail flag
+    // This gives full control to resultDeliveryMode setting
     if (deliveryMode === 'email_only' || deliveryMode === 'show_and_email') {
-      return true;
-    }
-    
-    // Check result config
-    if (resultConfig.sendEmail === true) {
       return true;
     }
     

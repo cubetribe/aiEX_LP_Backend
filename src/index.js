@@ -46,6 +46,10 @@ module.exports = {
       // Force initialization by calling getStatus
       const emailStatus = emailService.getStatus();
       strapi.log.info('✅ Email Service initialized:', emailStatus);
+      
+      // IMPORTANT: Attach email service to strapi for global access
+      strapi.emailService = emailService;
+      strapi.log.info('✅ Email Service attached to strapi object');
     } catch (error) {
       strapi.log.error('❌ Error initializing Email service:', error);
     }
