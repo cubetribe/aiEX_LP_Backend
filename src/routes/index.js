@@ -1302,6 +1302,36 @@ Gib die optimierte Konfiguration als VOLLSTÄNDIGES JSON aus.`
     },
   },
   {
+    method: 'POST',
+    path: '/debug/queue-process',
+    handler: async (ctx) => {
+      try {
+        if (!strapi.queueService) {
+          ctx.status = 503;
+          ctx.body = { error: 'Queue service not available' };
+          return;
+        }
+
+        const processed = await strapi.queueService.processPendingInMemoryJobs();
+        
+        ctx.body = {
+          success: true,
+          data: {
+            processedJobs: processed || 0,
+            message: 'Manual processing triggered'
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error processing queue:', error);
+        ctx.status = 500;
+        ctx.body = { error: error.message };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
     method: 'GET',
     path: '/debug/logs',
     handler: async (ctx) => {
@@ -1809,6 +1839,53 @@ Gib die optimierte Konfiguration als VOLLSTÄNDIGES JSON aus.`
           error: 'Failed to resume queue',
           details: error.message 
         };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'GET',
+    path: '/debug/queue-jobs',
+    handler: async (ctx) => {
+      try {
+        if (!strapi.queueService) {
+          ctx.status = 503;
+          ctx.body = { error: 'Queue service not available' };
+          return;
+        }
+
+        const queues = {};
+        for (const [name, queue] of strapi.queueService.queues) {
+          if (queue.isInMemory) {
+            queues[name] = {
+              waiting: (await queue.getWaiting()).length,
+              active: (await queue.getActive()).length,
+              completed: (await queue.getCompleted()).length,
+              failed: (await queue.getFailed()).length,
+              jobs: Array.from(queue.jobs.values()).map(job => ({
+                id: job.id,
+                type: job.type,
+                status: job.status,
+                createdAt: job.createdAt,
+                attempts: job.attempts
+              }))
+            };
+          }
+        }
+
+        ctx.body = {
+          success: true,
+          data: {
+            isInMemory: !strapi.queueService.useRedis,
+            queues
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error getting queue jobs:', error);
+        ctx.status = 500;
+        ctx.body = { error: error.message };
       }
     },
     config: {
