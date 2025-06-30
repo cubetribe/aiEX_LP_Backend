@@ -78,7 +78,7 @@ const QuizConfigSchema = z.object({
   type: z.literal('quiz'),
   title: z.string().min(1, 'Quiz title is required'),
   description: z.string().optional(),
-  questions: z.array(QuestionSchema).min(1, 'At least one question is required'),
+  questions: z.array(QuestionSchema).min(0).default([]), // Allow empty questions array for draft campaigns
   scoring: ScoringSchema.default({}),
   styling: StylingSchema.default({}),
   behavior: BehaviorSchema.default({})

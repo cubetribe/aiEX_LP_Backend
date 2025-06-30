@@ -68,8 +68,10 @@ module.exports = {
         hasResultDisplayConfig: !!data?.resultDisplayConfig,
         whereClause: event.params.where,
         // Log the actual config being sent (truncated if too large)
-        configSample: data?.config ? JSON.stringify(data.config).substring(0, 200) : 'none',
-        fullDataKeys: data ? Object.keys(data) : []
+        configSample: data?.config ? JSON.stringify(data.config).substring(0, 500) : 'none',
+        fullDataKeys: data ? Object.keys(data) : [],
+        // Log if this is from admin panel (detectable patterns)
+        isAdminPanel: data && !data.campaignType && data.config && typeof data.config === 'object'
       });
       
       // Skip validation if no data or config changes
@@ -159,7 +161,7 @@ module.exports = {
           });
           
           // Only validate if we have a complete config structure after merge
-          if (mergedConfig.title && mergedConfig.questions && mergedConfig.questions.length > 0) {
+          if (mergedConfig.title) {
             // Ensure the merged config has the correct type
             mergedConfig.type = campaignType;
             
