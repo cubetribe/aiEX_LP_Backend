@@ -207,9 +207,25 @@ module.exports = [
 
         // Check if campaign exists
         const campaignId = parseInt(id);
-        const campaign = await strapi.entityService.findOne('api::campaign.campaign', campaignId);
+        strapi.log.info(`🔍 Looking for campaign ID: ${campaignId} (type: ${typeof campaignId})`);
+        
+        // Try different approaches to find the campaign
+        let campaign = await strapi.entityService.findOne('api::campaign.campaign', campaignId, {
+          populate: ['*']
+        });
+        
+        // If not found, try with filters
+        if (!campaign) {
+          strapi.log.warn(`⚠️ Campaign ${campaignId} not found with findOne, trying with findMany...`);
+          const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
+            filters: { id: campaignId },
+            populate: ['*']
+          });
+          campaign = campaigns && campaigns.length > 0 ? campaigns[0] : null;
+        }
         
         if (!campaign) {
+          strapi.log.error(`❌ Campaign ${campaignId} not found at all`);
           ctx.status = 404;
           ctx.body = { 
             status: 404,
