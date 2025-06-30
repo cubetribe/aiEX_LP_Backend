@@ -827,11 +827,6 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
       return true;
     }
     
-    // Check if email is required for high-quality leads
-    if (lead.leadQuality === 'hot' && resultConfig.emailHotLeads !== false) {
-      return true;
-    }
-    
     return false;
   },
 

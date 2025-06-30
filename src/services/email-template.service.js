@@ -276,7 +276,6 @@ Ihr GoAIX Team`
       enabled: this.isEmailEnabled(campaign),
       deliveryMode: campaign.resultDeliveryMode || 'show_only',
       requireEmail: campaign.requireEmailForResult || false,
-      sendToHotLeads: resultConfig.emailHotLeads !== false,
       sendToWarmLeads: resultConfig.emailWarmLeads === true,
       sendToAllLeads: resultConfig.sendEmail === true
     };
