@@ -71,11 +71,14 @@
       }
     },
     "jsonCode": {
-      "type": "text",
+      "type": "json",
       "required": false,
-      "maxLength": 50000,
-      "default": "// Beispiel-Testkampagne:\n/*\n{\n  \"title\": \"Testkampagne – Funktionsprüfung\",\n  \"description\": \"Dies ist eine Testkampagne zur Überprüfung des Quiz-Flows.\",\n  \"scoring\": {\n    \"logic\": \"none\"\n  },\n  \"styling\": {\n    \"primaryColor\": \"#ff9800\",\n    \"secondaryColor\": \"#607d8b\"\n  },\n  \"behavior\": {\n    \"allowBack\": true,\n    \"showProgress\": true,\n    \"randomizeQuestions\": false\n  },\n  \"questions\": [\n    {\n      \"id\": \"testfrage_1\",\n      \"type\": \"single-choice\",\n      \"order\": 1,\n      \"question\": \"Magst du Pizza?\",\n      \"options\": [\n        \"Ja\",\n        \"Nein\",\n        \"Kommt drauf an\"\n      ],\n      \"required\": true\n    },\n    {\n      \"id\": \"testfrage_2\",\n      \"type\": \"text\",\n      \"order\": 2,\n      \"question\": \"Was möchtest du testen?\",\n      \"required\": false\n    }\n  ]\n}\n*/",
-      "description": "Raw JSON configuration for bot-generated campaigns. Will override config field when present."
+      "default": null,
+      "pluginOptions": {
+        "content-manager": {
+          "description": "JSON-Konfiguration für erweiterte Campaign-Features. Überschreibt die Standard-Konfiguration.\n\nBeispiel:\n{\n  \"questions\": [...],\n  \"scoring\": { \"logic\": \"conditional\" }\n}\n\nVerfügbare Felder: questions, scoring, styling, behavior"
+        }
+      }
     },
     "previewUrl": {
       "type": "string",
@@ -87,34 +90,38 @@
       "type": "text",
       "required": false,
       "maxLength": 5000,
-      "default": "Erstelle basierend auf den folgenden Antworten ein personalisiertes Ergebnis:\n\n{{responses}}\n\nKampagne: {{campaignTitle}}"
+      "default": "Erstelle basierend auf den folgenden Antworten ein personalisiertes Ergebnis:\n\n{{responses}}\n\nKampagne: {{campaignTitle}}",
+      "pluginOptions": {
+        "content-manager": {
+          "description": "Prompt-Template für die AI-Generierung.\n\nVerfügbare Variablen:\n{{firstName}} - Vorname des Leads\n{{email}} - E-Mail-Adresse\n{{responses}} - Quiz-Antworten als JSON\n{{leadScore}} - Lead-Score (0-100)\n{{leadQuality}} - Lead-Qualität (hot/warm/cold)\n{{campaignTitle}} - Name der Kampagne"
+        }
+      }
     },
     "aiProvider": {
       "type": "enumeration",
-      "enum": ["openai", "anthropic", "gemini", "auto"],
-      "default": "auto",
+      "enum": ["openai"],
+      "default": "openai",
       "required": false,
       "pluginOptions": {
         "content-manager": {
-          "visible": false
+          "visible": true,
+          "editable": false,
+          "description": "Derzeit nur OpenAI verfügbar"
         }
       }
     },
     "aiModel": {
       "type": "enumeration", 
-      "enum": [
-        "gpt-4o",
-        "gpt-4.5",
-        "o3",
-        "claude-3.7-opus",
-        "claude-3.7-sonnet",
-        "claude-opus-4-20250514",
-        "claude-sonnet-4-20250514",
-        "gemini-2.5-pro",
-        "gemini-2.5-flash"
-      ],
+      "enum": ["gpt-4o"],
       "default": "gpt-4o",
-      "required": false
+      "required": false,
+      "pluginOptions": {
+        "content-manager": {
+          "visible": true,
+          "editable": false,
+          "description": "Derzeit nur GPT-4o verfügbar. Weitere Modelle folgen."
+        }
+      }
     },
     "aiTemperature": {
       "type": "decimal",
@@ -131,7 +138,12 @@
     "emailTemplate": {
       "type": "text",
       "maxLength": 10000,
-      "default": "Hallo {{firstName}},\n\nvielen Dank für Ihre Teilnahme an {{campaignTitle}}!\n\nIhr personalisiertes Ergebnis:\n{{aiResult}}\n\nBeste Grüße\nIhr GoAIX Team"
+      "default": "Hallo {{firstName}},\n\nvielen Dank für Ihre Teilnahme an {{campaignTitle}}!\n\nIhr personalisiertes Ergebnis:\n{{aiResult}}\n\nBeste Grüße\nIhr GoAIX Team",
+      "pluginOptions": {
+        "content-manager": {
+          "description": "E-Mail-Template für den Ergebnisversand.\n\nVerfügbare Variablen:\n{{firstName}} - Vorname\n{{email}} - E-Mail\n{{campaignTitle}} - Kampagnen-Name\n{{aiResult}} - AI-generiertes Ergebnis\n{{leadScore}} - Score\n{{leadQuality}} - Qualität"
+        }
+      }
     },
     "emailSubject": {
       "type": "string",
@@ -166,6 +178,11 @@
         "showShareButton": true,
         "redirectAfterResult": null,
         "autoRedirectDelay": 0
+      },
+      "pluginOptions": {
+        "content-manager": {
+          "description": "Konfiguration der Ergebnisanzeige"
+        }
       }
     },
     "googleSheetId": {

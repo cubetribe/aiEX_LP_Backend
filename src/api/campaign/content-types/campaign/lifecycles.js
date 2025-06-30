@@ -24,10 +24,16 @@ module.exports = {
         dataKeys: Object.keys(data)
       });
       
-      // Ensure aiProvider is always set to 'auto'
-      if (!data.aiProvider || data.aiProvider !== 'auto') {
-        data.aiProvider = 'auto';
-        strapi.log.info('✅ AI Provider set to auto mode');
+      // Ensure aiProvider is set to 'openai' (only available option)
+      if (!data.aiProvider || data.aiProvider !== 'openai') {
+        data.aiProvider = 'openai';
+        strapi.log.info('✅ AI Provider set to openai');
+      }
+      
+      // Ensure aiModel is set to 'gpt-4o' (only available option)
+      if (!data.aiModel || data.aiModel !== 'gpt-4o') {
+        data.aiModel = 'gpt-4o';
+        strapi.log.info('✅ AI Model set to gpt-4o');
       }
       
       // Ensure config exists for new campaigns (with defaults)
