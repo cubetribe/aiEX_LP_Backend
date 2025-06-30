@@ -1123,6 +1123,55 @@ Gib die optimierte Konfiguration als VOLLSTÄNDIGES JSON aus.`
     },
   },
   {
+    method: 'PUT',
+    path: '/debug/admin-panel-test/:id',
+    handler: async (ctx) => {
+      try {
+        const { id } = ctx.params;
+        const data = ctx.request.body;
+        
+        // Log exactly what we receive
+        strapi.log.info('🔍 DEBUG: Admin Panel Test Request:', {
+          campaignId: id,
+          bodyType: typeof ctx.request.body,
+          bodyKeys: Object.keys(ctx.request.body || {}),
+          rawBody: JSON.stringify(ctx.request.body),
+          headers: ctx.request.headers
+        });
+        
+        // Try to process it like the real endpoint would
+        if (data.data) {
+          strapi.log.info('🔍 DEBUG: Found nested data:', {
+            dataKeys: Object.keys(data.data),
+            hasConfig: !!data.data.config,
+            configType: typeof data.data.config,
+            configValue: data.data.config
+          });
+        }
+        
+        ctx.body = {
+          success: true,
+          debug: {
+            receivedBody: ctx.request.body,
+            receivedHeaders: ctx.request.headers,
+            analysis: {
+              hasDataWrapper: !!data.data,
+              configLocation: data.data?.config ? 'data.data.config' : data.config ? 'data.config' : 'not found',
+              configType: data.data?.config ? typeof data.data.config : data.config ? typeof data.config : 'not found'
+            }
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Debug endpoint error:', error);
+        ctx.status = 500;
+        ctx.body = { error: error.message };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
     method: 'GET',
     path: '/debug/logs',
     handler: async (ctx) => {
