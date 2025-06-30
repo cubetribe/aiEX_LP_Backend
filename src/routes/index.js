@@ -80,19 +80,20 @@ module.exports = [
           hasResultDisplayConfig: !!campaign.resultDisplayConfig,
           hasShowResultImmediately: !!campaign.showResultImmediately,
           configSize: campaign.config ? JSON.stringify(campaign.config).length : 0,
-          jsonCodeSize: campaign.jsonCode ? campaign.jsonCode.length : 0
+          jsonCodeSize: campaign.jsonCode ? JSON.stringify(campaign.jsonCode).length : 0
         }, 'SUCCESS', null, ctx);
         
         // Merge jsonCode with config if jsonCode is present
-        if (campaign.jsonCode && campaign.jsonCode.trim()) {
+        if (campaign.jsonCode) {
           try {
-            const jsonConfig = JSON.parse(campaign.jsonCode);
+            // jsonCode is now a JSON field, not text - no need to parse
+            const jsonConfig = campaign.jsonCode;
             campaign.config = { ...campaign.config, ...jsonConfig };
             await debugLogger.logCampaign('JSON_MERGE', slug, { mergedFields: Object.keys(jsonConfig) }, 'SUCCESS', null, ctx);
             strapi.log.info(`Merged jsonCode config for campaign ${slug}`);
           } catch (error) {
             await debugLogger.logCampaign('JSON_MERGE', slug, { jsonCode: campaign.jsonCode }, 'ERROR', error, ctx);
-            strapi.log.error(`Invalid JSON in jsonCode for campaign ${slug}:`, error);
+            strapi.log.error(`Error merging jsonCode for campaign ${slug}:`, error);
           }
         }
         
