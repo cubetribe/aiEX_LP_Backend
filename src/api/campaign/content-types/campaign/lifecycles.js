@@ -67,9 +67,8 @@ module.exports = {
         configType: data?.config ? typeof data.config : 'undefined',
         hasResultDisplayConfig: !!data?.resultDisplayConfig,
         whereClause: event.params.where,
-        // Log the actual config being sent (truncated if too large)
-        configSample: data?.config ? JSON.stringify(data.config).substring(0, 500) : 'none',
-        fullDataKeys: data ? Object.keys(data) : [],
+        // Log the FULL data object to see what admin panel sends
+        fullData: JSON.stringify(data),
         // Log if this is from admin panel (detectable patterns)
         isAdminPanel: data && !data.campaignType && data.config && typeof data.config === 'object'
       });
@@ -77,6 +76,17 @@ module.exports = {
       // Skip validation if no data or config changes
       if (!data || (!data.config && !data.resultDisplayConfig)) {
         return;
+      }
+      
+      // Handle config if it comes as a string (Admin Panel sometimes sends JSON strings)
+      if (data.config && typeof data.config === 'string') {
+        try {
+          data.config = JSON.parse(data.config);
+          strapi.log.info('📝 Parsed config from string to object');
+        } catch (e) {
+          strapi.log.error('❌ Failed to parse config string:', e);
+          throw new Error('Invalid config format - must be valid JSON');
+        }
       }
       
       // Detect admin panel updates - they typically don't send campaignType
