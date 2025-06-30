@@ -1994,4 +1994,123 @@ Gib die optimierte Konfiguration als VOLLSTÄNDIGES JSON aus.`
       auth: false,
     },
   },
+  {
+    method: 'GET',
+    path: '/queue/status',
+    handler: async (ctx) => {
+      try {
+        if (!strapi.queueService) {
+          ctx.body = { 
+            success: false, 
+            error: 'Queue service not available',
+            initialized: false 
+          };
+          return;
+        }
+
+        // Get service status
+        const serviceStatus = strapi.queueService.getServiceStatus();
+        
+        // Get all queue stats
+        const queueStats = await strapi.queueService.getAllQueueStats();
+        
+        // Get specific lead processing info for debugging
+        const aiQueueStats = queueStats['ai-processing'];
+        
+        ctx.body = {
+          success: true,
+          service: serviceStatus,
+          queues: queueStats,
+          debug: {
+            hasQueueService: !!strapi.queueService,
+            isInitialized: strapi.queueService.isInitialized,
+            useRedis: strapi.queueService.useRedis,
+            queueCount: strapi.queueService.queues.size,
+            aiProcessingQueue: {
+              waiting: aiQueueStats?.waiting || 0,
+              active: aiQueueStats?.active || 0,
+              completed: aiQueueStats?.completed || 0,
+              failed: aiQueueStats?.failed || 0
+            }
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error getting queue status:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to get queue status', details: error.message };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'GET',
+    path: '/queue/jobs/:queueName',
+    handler: async (ctx) => {
+      try {
+        const { queueName } = ctx.params;
+        
+        if (!strapi.queueService) {
+          ctx.body = { success: false, error: 'Queue service not available' };
+          return;
+        }
+
+        const queue = strapi.queueService.queues.get(queueName);
+        if (!queue) {
+          ctx.status = 404;
+          ctx.body = { error: `Queue ${queueName} not found` };
+          return;
+        }
+
+        const [waiting, active, completed, failed] = await Promise.all([
+          queue.getWaiting(),
+          queue.getActive(),
+          queue.getCompleted(),
+          queue.getFailed()
+        ]);
+
+        ctx.body = {
+          success: true,
+          queueName,
+          jobs: {
+            waiting: waiting.map(j => ({
+              id: j.id,
+              type: j.type,
+              data: j.data,
+              createdAt: j.createdAt,
+              attempts: j.attempts
+            })),
+            active: active.map(j => ({
+              id: j.id,
+              type: j.type,
+              data: j.data,
+              startedAt: j.processedOn
+            })),
+            completed: completed.slice(0, 10).map(j => ({
+              id: j.id,
+              type: j.type,
+              data: j.data,
+              completedAt: j.finishedOn,
+              result: j.returnvalue
+            })),
+            failed: failed.slice(0, 10).map(j => ({
+              id: j.id,
+              type: j.type,
+              data: j.data,
+              failedAt: j.finishedOn,
+              error: j.failedReason
+            }))
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error getting queue jobs:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to get queue jobs', details: error.message };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
 ];
