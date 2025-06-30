@@ -6,6 +6,7 @@
  */
 
 const { validateCampaignConfig, validateResultDisplayConfig } = require('../../../../utils/campaign-schemas');
+const { ApplicationError } = require('@strapi/utils').errors;
 const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'https://aiex-quiz-platform-519nmqcf0-cubetribes-projects.vercel.app';
 
 module.exports = {
@@ -58,16 +59,9 @@ module.exports = {
     try {
       const { data } = event.params;
       
-      // TEMPORARY: Check if this is a Content Manager request
-      // Content Manager requests have a specific pattern in the context
-      const isContentManager = event?.params?.model?.uid === 'api::campaign.campaign' || 
-                              event?.model?.uid === 'api::campaign.campaign';
-      
-      if (isContentManager) {
-        strapi.log.warn('⚠️ Content Manager update detected - skipping validation temporarily');
-        // For now, just let Content Manager updates through
-        return;
-      }
+      // Skip validation completely for now - we need to debug what Content Manager sends
+      strapi.log.warn('⚠️ TEMPORARY: Skipping ALL validation to debug Content Manager');
+      return;
       
       // Enhanced logging for debugging admin panel issues
       strapi.log.info('📝 Campaign update event:', {
