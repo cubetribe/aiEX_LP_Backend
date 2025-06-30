@@ -7,7 +7,7 @@
 
 const { validateCampaignConfig, validateResultDisplayConfig } = require('../../../../utils/campaign-schemas');
 const { ApplicationError } = require('@strapi/utils').errors;
-const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'https://aiex-quiz-platform-519nmqcf0-cubetribes-projects.vercel.app';
+const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'https://aiex-quiz-platform.vercel.app';
 
 module.exports = {
   // Before creating a campaign

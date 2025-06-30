@@ -114,6 +114,71 @@ module.exports = [
   },
   {
     method: 'POST',
+    path: '/campaigns/public/:slug/submit',
+    handler: async (ctx) => {
+      const { slug } = ctx.params;
+      const { firstName, email, responses } = ctx.request.body;
+
+      try {
+        // Set CORS headers manually
+        const origin = ctx.get('Origin');
+        if (origin && (origin.endsWith('.vercel.app') || origin.includes('goaiex.com'))) {
+          ctx.set('Access-Control-Allow-Origin', origin);
+          ctx.set('Access-Control-Allow-Credentials', 'true');
+          ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          ctx.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        }
+
+        if (!firstName || !email) {
+          ctx.status = 400;
+          ctx.body = { error: 'firstName and email are required' };
+          return;
+        }
+
+        const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
+          filters: {
+            slug,
+            isActive: true
+          }
+        });
+
+        if (!campaigns || campaigns.length === 0) {
+          ctx.status = 404;
+          ctx.body = { error: 'Campaign not found or inactive' };
+          return;
+        }
+
+        const campaign = campaigns[0];
+
+        const lead = await strapi.service('api::lead.lead').processLeadSubmission({
+          firstName,
+          email,
+          responses: responses || {},
+          campaign: campaign.id
+        });
+
+        strapi.log.info(`Lead submitted via public route: ${email} to campaign ${slug}`);
+
+        ctx.body = { 
+          data: {
+            id: lead.id,
+            leadScore: lead.leadScore,
+            leadQuality: lead.leadQuality,
+            message: 'Lead submitted successfully'
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error submitting lead via public route:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Failed to submit lead' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'POST',
     path: '/campaigns/:slug/submit',
     handler: async (ctx) => {
       const { slug } = ctx.params;
