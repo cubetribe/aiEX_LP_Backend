@@ -1002,7 +1002,6 @@ class QueueService {
    */
   async processPendingInMemoryJobs() {
     if (this.useRedis) {
-      this.strapi.log.info('🔄 Skipping manual processing - using Redis queues');
       return;
     }
 
@@ -1010,19 +1009,26 @@ class QueueService {
     for (const [name, queue] of this.queues) {
       if (queue.isInMemory) {
         const waitingJobs = await queue.getWaiting();
-        this.strapi.log.info(`🔄 Found ${waitingJobs.length} waiting jobs in ${name}`);
+        
+        if (waitingJobs.length > 0) {
+          this.strapi.log.info(`🔄 Found ${waitingJobs.length} waiting jobs in ${name}`);
+        }
         
         for (const job of waitingJobs) {
           if (queue.processors.has(job.type)) {
-            this.strapi.log.info(`🚀 Processing pending job: ${name}:${job.id}`);
+            this.strapi.log.info(`🚀 Processing pending job: ${name}:${job.id} (type: ${job.type})`);
             await queue.processJob(job);
             processedCount++;
+          } else {
+            this.strapi.log.warn(`⚠️ No processor for job type: ${job.type} in queue: ${name}`);
           }
         }
       }
     }
     
-    this.strapi.log.info(`✅ Processed ${processedCount} pending in-memory jobs`);
+    if (processedCount > 0) {
+      this.strapi.log.info(`✅ Processed ${processedCount} pending in-memory jobs`);
+    }
     return processedCount;
   }
 }

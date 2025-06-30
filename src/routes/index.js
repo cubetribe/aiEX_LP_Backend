@@ -162,8 +162,6 @@ module.exports = [
         ctx.body = { 
           data: {
             id: lead.id,
-            leadScore: lead.leadScore,
-            leadQuality: lead.leadQuality,
             message: 'Lead submitted successfully'
           }
         };
@@ -227,8 +225,6 @@ module.exports = [
         ctx.body = { 
           data: {
             id: lead.id,
-            leadScore: lead.leadScore,
-            leadQuality: lead.leadQuality,
             message: 'Lead submitted successfully'
           }
         };
