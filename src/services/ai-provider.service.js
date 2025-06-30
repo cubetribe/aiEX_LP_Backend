@@ -54,20 +54,6 @@ class AIProviderService {
         apiName: 'claude-opus-4-20250514',
         displayName: 'Opus 4.0 OverKill',
         available: true
-      },
-      
-      // Google Gemini Models
-      'gemini-1.5-pro': {
-        provider: 'gemini',
-        apiName: 'gemini-1.5-pro-latest',
-        displayName: 'Gemini 1.5 Pro',
-        available: true
-      },
-      'gemini-2.5-pro': {
-        provider: 'gemini',
-        apiName: 'gemini-2.5-pro',
-        displayName: 'Gemini 2.5 Pro',
-        available: true // Assuming it's available as you requested
       }
     };
   }
