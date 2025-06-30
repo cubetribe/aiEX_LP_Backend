@@ -13,7 +13,63 @@ class AIProviderService {
   constructor() {
     this.providers = {};
     this.isConfigured = {};
+    this.modelRegistry = this.initializeModelRegistry();
     this.init();
+  }
+
+  /**
+   * Initialize model registry with marketing names and API names
+   */
+  initializeModelRegistry() {
+    return {
+      // OpenAI Models
+      'gpt-4o': {
+        provider: 'openai',
+        apiName: 'gpt-4o',
+        displayName: 'GPT-4o',
+        available: true
+      },
+      'gpt-4o-mini': {
+        provider: 'openai',
+        apiName: 'gpt-4o-mini',
+        displayName: 'GPT-4o Mini',
+        available: true
+      },
+      'gpt-3.5-turbo': {
+        provider: 'openai',
+        apiName: 'gpt-3.5-turbo',
+        displayName: 'GPT-3.5 Turbo',
+        available: true
+      },
+      
+      // Anthropic Models
+      'claude-3.7-sonnet': {
+        provider: 'anthropic',
+        apiName: 'claude-3-7-sonnet-20250219',
+        displayName: 'Claude Sonnet 3.7',
+        available: true
+      },
+      'claude-4.0-opus': {
+        provider: 'anthropic',
+        apiName: 'claude-opus-4-20250514',
+        displayName: 'Opus 4.0 OverKill',
+        available: true
+      },
+      
+      // Google Gemini Models
+      'gemini-1.5-pro': {
+        provider: 'gemini',
+        apiName: 'gemini-1.5-pro-latest',
+        displayName: 'Gemini 1.5 Pro',
+        available: true
+      },
+      'gemini-2.5-pro': {
+        provider: 'gemini',
+        apiName: 'gemini-2.5-pro',
+        displayName: 'Gemini 2.5 Pro',
+        available: true // Assuming it's available as you requested
+      }
+    };
   }
 
   async init() {
@@ -77,24 +133,40 @@ class AIProviderService {
         let cost = 0;
         let modelUsed = model;
 
+        // Find a model for this provider from registry
+        let modelToUse = null;
+        let modelInfo = null;
+        
+        for (const [key, info] of Object.entries(this.modelRegistry)) {
+          if (info.provider === provider && info.available) {
+            modelToUse = key;
+            modelInfo = info;
+            break;
+          }
+        }
+        
+        if (!modelToUse) {
+          throw new Error(`No available model found for provider ${provider}`);
+        }
+        
         switch (provider) {
           case 'openai':
-            const openaiResult = await this.callOpenAI(processedPrompt, model);
-            response = openaiResult.response;
+            const openaiResult = await this.handleOpenAI(processedPrompt, modelToUse, modelInfo);
+            response = openaiResult.content;
             cost = openaiResult.cost;
             modelUsed = openaiResult.model;
             break;
             
           case 'anthropic':
-            const anthropicResult = await this.callAnthropic(processedPrompt, model);
-            response = anthropicResult.response;
+            const anthropicResult = await this.handleAnthropic(processedPrompt, modelToUse, modelInfo);
+            response = anthropicResult.content;
             cost = anthropicResult.cost;
             modelUsed = anthropicResult.model;
             break;
             
           case 'gemini':
-            const geminiResult = await this.callGemini(processedPrompt, model);
-            response = geminiResult.response;
+            const geminiResult = await this.handleGemini(processedPrompt, modelToUse, modelInfo);
+            response = geminiResult.content;
             cost = geminiResult.cost;
             modelUsed = geminiResult.model;
             break;
@@ -131,123 +203,6 @@ class AIProviderService {
     };
   }
 
-  /**
-   * Call OpenAI API
-   */
-  async callOpenAI(prompt, model = 'auto') {
-    if (!this.isConfigured.openai) {
-      throw new Error('OpenAI not configured');
-    }
-
-    // Auto-select model if not specified
-    if (model === 'auto') {
-      model = 'gpt-4o'; // Default to GPT-4o for good balance of quality/cost
-    }
-    
-    // Use exact model names - no mapping!
-    const apiModel = model;
-    
-    strapi.log.info(`🤖 OpenAI model: ${apiModel}`);
-
-    const completion = await this.providers.openai.chat.completions.create({
-      model: apiModel,
-      messages: [
-        {
-          role: "system",
-          content: "Du bist ein Experte für personalisierte AI-Empfehlungen. Erstelle präzise, hilfreiche und professionelle Antworten basierend auf den Benutzerdaten."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      max_tokens: 1000,
-      temperature: 0.7
-    });
-
-    const response = completion.choices[0].message.content;
-    
-    // Calculate cost (approximate pricing)
-    const inputTokens = completion.usage.prompt_tokens;
-    const outputTokens = completion.usage.completion_tokens;
-    const cost = this.calculateOpenAICost(apiModel, inputTokens, outputTokens);
-
-    return { response, cost, model: apiModel };
-  }
-
-  /**
-   * Call Anthropic Claude API
-   */
-  async callAnthropic(prompt, model = 'auto') {
-    if (!this.isConfigured.anthropic) {
-      throw new Error('Anthropic not configured');
-    }
-
-    // Auto-select model if not specified
-    if (model === 'auto') {
-      model = 'claude-3.7-opus'; // Default to Claude 3.7 Opus
-    }
-    
-    // Use exact model names - no mapping!
-    const apiModel = model;
-    
-    strapi.log.info(`🎭 Anthropic model: ${apiModel}`);
-
-    const message = await this.providers.anthropic.messages.create({
-      model: apiModel,
-      max_tokens: 1000,
-      temperature: 0.7,
-      system: "Du bist ein Experte für personalisierte AI-Empfehlungen. Erstelle präzise, hilfreiche und professionelle Antworten basierend auf den Benutzerdaten.",
-      messages: [
-        {
-          role: "user",
-          content: prompt
-        }
-      ]
-    });
-
-    const response = message.content[0].text;
-    
-    // Calculate cost (approximate pricing)
-    const inputTokens = message.usage.input_tokens;
-    const outputTokens = message.usage.output_tokens;
-    const cost = this.calculateAnthropicCost(apiModel, inputTokens, outputTokens);
-
-    return { response, cost, model: apiModel };
-  }
-
-  /**
-   * Call Google Gemini API
-   */
-  async callGemini(prompt, model = 'auto') {
-    if (!this.isConfigured.gemini) {
-      throw new Error('Gemini not configured');
-    }
-
-    // Auto-select model if not specified
-    if (model === 'auto') {
-      model = 'gemini-2.5-pro'; // Default to Gemini 2.5 Pro
-    }
-    
-    // Use exact model names - no mapping!
-    const apiModel = model;
-    
-    strapi.log.info(`🌟 Gemini model: ${apiModel}`);
-
-    const genModel = this.providers.gemini.getGenerativeModel({ model: apiModel });
-    
-    const enhancedPrompt = `Du bist ein Experte für personalisierte AI-Empfehlungen. Erstelle präzise, hilfreiche und professionelle Antworten basierend auf den Benutzerdaten.
-
-${prompt}`;
-
-    const result = await genModel.generateContent(enhancedPrompt);
-    const response = result.response.text();
-    
-    // Calculate cost (approximate - Gemini pricing is complex)
-    const cost = this.calculateGeminiCost(apiModel, prompt.length, response.length);
-
-    return { response, cost, model: apiModel };
-  }
 
   /**
    * Process prompt template with variables
@@ -400,13 +355,11 @@ ${prompt}`;
    */
   calculateAnthropicCost(model, inputTokens, outputTokens) {
     const pricing = {
+      'claude-3-7-sonnet-20250219': { input: 0.003, output: 0.015 }, // Claude Sonnet 3.7
+      'claude-opus-4-20250514': { input: 0.015, output: 0.075 }, // Opus 4.0 OverKill
       'claude-3-5-sonnet-20241022': { input: 0.003, output: 0.015 },
       'claude-3-opus-20240229': { input: 0.015, output: 0.075 },
-      'claude-3-haiku-20240307': { input: 0.00025, output: 0.00125 },
-      'claude-3.7-opus': { input: 0.015, output: 0.075 }, // Claude 3.7 pricing
-      'claude-3.7-sonnet': { input: 0.003, output: 0.015 }, // Claude 3.7 pricing
-      'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 }, // Claude 4 Sonnet pricing
-      'claude-opus-4-20250514': { input: 0.015, output: 0.075 } // Claude 4 Opus pricing
+      'claude-3-haiku-20240307': { input: 0.00025, output: 0.00125 }
     };
 
     const rates = pricing[model] || pricing['claude-3-5-sonnet-20241022'];
@@ -466,96 +419,66 @@ ${prompt}`;
 
   /**
    * Generate content using the specified AI provider
-   * This is the main method for production use
+   * This is the main orchestrator method
    */
   async generateContent(promptTemplate, data, options = {}) {
     try {
       // Process the prompt template with data
       const processedPrompt = this.processPromptTemplate(promptTemplate, data);
       
-      // Determine which provider to use
-      let provider = options.provider || 'auto'; // Default to auto
-      const model = options.model || 'auto';
+      const model = options.model || 'gpt-4o'; // Default model
       
-      // Log incoming options for debugging
-      strapi.log.info(`🤖 AI generateContent called with provider: ${provider}, model: ${model}`);
+      // 1. ANBIETER ERKENNEN aus Model Registry
+      const modelInfo = this.modelRegistry[model];
+      if (!modelInfo) {
+        throw new Error(`Unbekanntes Modell: ${model}. Verfügbare Modelle: ${Object.keys(this.modelRegistry).join(', ')}`);
+      }
       
-      // Map model names to providers
-      if (model && model !== 'auto') {
-        // Determine provider from model name
-        if (model.startsWith('gpt')) {
-          provider = 'openai';
-        } else if (model.startsWith('claude')) {
-          provider = 'anthropic';
-        } else if (model.startsWith('gemini')) {
-          provider = 'gemini';
+      if (!modelInfo.available) {
+        throw new Error(`Modell ${model} ist derzeit nicht verfügbar`);
+      }
+      
+      const provider = modelInfo.provider;
+      strapi.log.info(`🎯 AI Orchestrator: Modell ${model} erkannt -> Provider: ${provider}, API-Name: ${modelInfo.apiName}`);
+      
+      // Prüfen ob Provider konfiguriert ist
+      if (!this.isConfigured[provider]) {
+        throw new Error(`Provider ${provider} ist nicht konfiguriert. Bitte API-Key prüfen.`);
+      }
+      
+      // 2. AN SPEZIFISCHEN HANDLER DELEGIEREN
+      try {
+        let result;
+        switch (provider) {
+          case 'openai':
+            result = await this.handleOpenAI(processedPrompt, model, modelInfo);
+            break;
+          case 'anthropic':
+            result = await this.handleAnthropic(processedPrompt, model, modelInfo);
+            break;
+          case 'gemini':
+            result = await this.handleGemini(processedPrompt, model, modelInfo);
+            break;
+          default:
+            throw new Error(`Kein Handler für Provider ${provider} implementiert`);
         }
-        strapi.log.info(`🎯 Determined provider ${provider} from model ${model}`);
+        
+        strapi.log.info(`✅ AI Orchestrator: Erfolgreich Content generiert mit ${modelInfo.displayName}`);
+        
+        // Vereinheitlichte Response
+        return {
+          content: result.content,
+          model: model,
+          provider: provider,
+          displayName: modelInfo.displayName,
+          cost: result.cost || 0,
+          success: true
+        };
+        
+      } catch (error) {
+        strapi.log.error(`❌ Fehler beim ${provider}-Handler für Modell ${model}:`, error);
+        throw error;
       }
-      
-      // Handle auto provider selection
-      if (provider === 'auto') {
-        const providerOrder = ['openai', 'anthropic', 'gemini'];
-        const availableProviders = providerOrder.filter(p => this.isConfigured[p]);
-        if (availableProviders.length === 0) {
-          throw new Error('No AI providers configured');
-        }
-        provider = availableProviders[0];
-        strapi.log.info(`Auto-selected provider: ${provider}`);
-      } else if (!this.isConfigured[provider]) {
-        // Fallback to any available provider
-        const availableProviders = Object.keys(this.isConfigured).filter(p => this.isConfigured[p]);
-        if (availableProviders.length === 0) {
-          throw new Error('No AI providers configured');
-        }
-        strapi.log.warn(`Provider ${provider} not configured, falling back to ${availableProviders[0]}`);
-        provider = availableProviders[0];
-      }
-      
-      let result;
-      
-      strapi.log.info(`🚀 Calling AI provider: ${provider} with model: ${model}`);
-      
-      // Call the appropriate provider
-      switch (provider) {
-        case 'openai':
-          result = await this.callOpenAI(processedPrompt, model);
-          break;
-        case 'anthropic':
-          result = await this.callAnthropic(processedPrompt, model);
-          break;
-        case 'gemini':
-          result = await this.callGemini(processedPrompt, model);
-          break;
-        default:
-          // If 'auto' is specified, try providers in order of preference
-          const providerOrder = ['openai', 'anthropic', 'gemini'];
-          for (const p of providerOrder) {
-            if (this.isConfigured[p]) {
-              strapi.log.info(`Auto-selecting provider: ${p}`);
-              if (p === 'openai') result = await this.callOpenAI(processedPrompt, model);
-              else if (p === 'anthropic') result = await this.callAnthropic(processedPrompt, model);
-              else if (p === 'gemini') result = await this.callGemini(processedPrompt, model);
-              break;
-            }
-          }
-      }
-      
-      if (!result) {
-        throw new Error('Failed to generate content with any provider');
-      }
-      
-      strapi.log.info(`✅ AI content generated successfully with ${provider}/${result.model}`);
-      
-      // Return in the expected format
-      return {
-        content: result.response,
-        provider: provider,
-        model: result.model,
-        cost: result.cost,
-        success: true
-      };
-      
     } catch (error) {
       strapi.log.error('AI content generation failed:', error);
       strapi.log.error('Error details:', {
@@ -565,6 +488,98 @@ ${prompt}`;
         model: model
       });
       throw error;
+    }
+  }
+
+  /**
+   * OpenAI Handler
+   */
+  async handleOpenAI(prompt, model, modelInfo) {
+    strapi.log.info(`🤖 OpenAI Handler: Using model ${modelInfo.apiName}`);
+    
+    try {
+      const response = await this.providers.openai.chat.completions.create({
+        model: modelInfo.apiName,
+        messages: [
+          {
+            role: "system",
+            content: "Du bist ein Experte für personalisierte AI-Empfehlungen. Erstelle präzise, hilfreiche und professionelle Antworten basierend auf den Benutzerdaten."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.7
+      });
+
+      return {
+        content: response.choices[0].message.content,
+        model: response.model,
+        cost: this.calculateOpenAICost(modelInfo.apiName, response.usage.prompt_tokens, response.usage.completion_tokens)
+      };
+    } catch (error) {
+      strapi.log.error(`OpenAI API Error:`, error);
+      throw new Error(`OpenAI API Fehler: ${error.message}`);
+    }
+  }
+
+  /**
+   * Anthropic Handler
+   */
+  async handleAnthropic(prompt, model, modelInfo) {
+    strapi.log.info(`🎭 Anthropic Handler: Using model ${modelInfo.apiName}`);
+    
+    try {
+      const response = await this.providers.anthropic.messages.create({
+        model: modelInfo.apiName,
+        max_tokens: 4096,
+        temperature: 0.7,
+        system: "Du bist ein Experte für personalisierte AI-Empfehlungen. Erstelle präzise, hilfreiche und professionelle Antworten basierend auf den Benutzerdaten.",
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      });
+
+      return {
+        content: response.content[0].text,
+        model: modelInfo.apiName,
+        cost: this.calculateAnthropicCost(modelInfo.apiName, response.usage.input_tokens, response.usage.output_tokens)
+      };
+    } catch (error) {
+      strapi.log.error(`Anthropic API Error:`, error);
+      throw new Error(`Anthropic API Fehler: ${error.message}`);
+    }
+  }
+
+  /**
+   * Google Gemini Handler
+   */
+  async handleGemini(prompt, model, modelInfo) {
+    strapi.log.info(`🌟 Gemini Handler: Using model ${modelInfo.apiName}`);
+    
+    try {
+      const genModel = this.providers.gemini.getGenerativeModel({ model: modelInfo.apiName });
+      
+      const enhancedPrompt = `Du bist ein Experte für personalisierte AI-Empfehlungen. Erstelle präzise, hilfreiche und professionelle Antworten basierend auf den Benutzerdaten.
+
+${prompt}`;
+
+      const result = await genModel.generateContent(enhancedPrompt);
+      const response = result.response;
+
+      return {
+        content: response.text(),
+        model: modelInfo.apiName,
+        cost: this.calculateGeminiCost(modelInfo.apiName, prompt.length, response.text().length)
+      };
+    } catch (error) {
+      strapi.log.error(`Gemini API Error:`, error);
+      throw new Error(`Gemini API Fehler: ${error.message}`);
     }
   }
 }
