@@ -156,7 +156,6 @@ module.exports = {
             
             strapi.log.info('📋 Handling partial update with core fields, merged config:', {
               campaignType,
-              hasTitle: !!mergedConfig.title,
               hasQuestions: !!mergedConfig.questions,
               questionsCount: mergedConfig.questions?.length || 0,
               updateKeys: Object.keys(data.config),

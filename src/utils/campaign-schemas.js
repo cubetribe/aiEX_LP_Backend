@@ -76,8 +76,7 @@ const BehaviorSchema = z.object({
 // Quiz Campaign Schema
 const QuizConfigSchema = z.object({
   type: z.literal('quiz'),
-  title: z.string().min(1, 'Quiz title is required'),
-  description: z.string().optional(),
+  // title und description sind Campaign-Felder, nicht config-Felder!
   questions: z.array(QuestionSchema).min(0).default([]), // Allow empty questions array for draft campaigns
   scoring: ScoringSchema.default({}),
   styling: StylingSchema.default({}),
@@ -87,8 +86,6 @@ const QuizConfigSchema = z.object({
 // Text Campaign Schema
 const TextConfigSchema = z.object({
   type: z.literal('text'),
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
   content: z.string().min(1, 'Content is required'),
   callToAction: z.string().optional(),
   styling: StylingSchema.default({}),
@@ -98,8 +95,6 @@ const TextConfigSchema = z.object({
 // Image Upload Campaign Schema
 const ImageConfigSchema = z.object({
   type: z.literal('image'),
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
   allowedFormats: z.array(z.string()).default(['jpg', 'jpeg', 'png', 'gif']),
   maxFileSize: z.number().positive().default(5242880), // 5MB
   maxFiles: z.number().positive().default(1),
@@ -110,8 +105,6 @@ const ImageConfigSchema = z.object({
 // Chatbot Campaign Schema
 const ChatbotConfigSchema = z.object({
   type: z.literal('chatbot'),
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
   initialMessage: z.string().min(1, 'Initial message is required'),
   conversationFlow: z.object({
     maxMessages: z.number().positive().default(10),
@@ -126,8 +119,6 @@ const ChatbotConfigSchema = z.object({
 // Custom Campaign Schema (flexible)
 const CustomConfigSchema = z.object({
   type: z.literal('custom'),
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
   customFields: z.record(z.any()).default({}),
   styling: StylingSchema.default({}),
   behavior: BehaviorSchema.default({})
