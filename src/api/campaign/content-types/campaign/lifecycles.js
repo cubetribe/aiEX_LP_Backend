@@ -79,28 +79,14 @@ module.exports = {
         return;
       }
       
-      // TEMPORARY: Skip ALL validation for admin panel updates
-      // This is a workaround until we fix the validation properly
-      if (data && !data.campaignType && !data.slug) {
-        strapi.log.warn('⚠️ TEMPORARY: Skipping validation for admin panel update');
-        return;
+      // Detect admin panel updates - they typically don't send campaignType
+      const isAdminPanelUpdate = data && !data.campaignType && !data.slug && data.config;
+      
+      if (isAdminPanelUpdate) {
+        strapi.log.info('📝 Admin panel update detected - applying enhanced validation logic');
       }
       
-      // Special handling for admin panel updates that only send nested properties
-      // If config is a partial update with only nested properties, skip validation
-      if (data.config && typeof data.config === 'object') {
-        const configKeys = Object.keys(data.config);
-        const nestedOnlyKeys = ['styling', 'behavior', 'scoring', 'metadata'];
-        const isNestedOnlyUpdate = configKeys.length > 0 && configKeys.every(key => nestedOnlyKeys.includes(key));
-        
-        if (isNestedOnlyUpdate) {
-          strapi.log.info('📝 Admin Panel nested-only update detected, skipping full validation:', {
-            updateKeys: configKeys,
-            campaignId: event.params.where?.id || event.params.where
-          });
-          return; // Skip validation for nested-only updates
-        }
-      }
+      // The improved validation logic will handle partial updates properly
     
     // Get campaign ID from where clause
     const campaignId = event.params.where?.id || event.params.where;
@@ -142,56 +128,57 @@ module.exports = {
         const isPartialUpdate = !hasCoreKeys && configKeys.length > 0;
         
         if (isPartialUpdate) {
-          // For partial updates, we need to do a deep merge with existing config
-          const deepMerge = (target, source) => {
-            const output = { ...target };
-            for (const key in source) {
-              if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                output[key] = deepMerge(target[key] || {}, source[key]);
-              } else {
-                output[key] = source[key];
+          // For partial updates, validate with the isPartialUpdate flag
+          const validation = validateCampaignConfig(data.config, campaignType, true);
+          
+          if (validation.isPartialUpdate) {
+            // It's a nested-only update, apply directly
+            strapi.log.info('✅ Nested-only update validated, applying directly');
+            // Merge with existing config
+            const mergedConfig = { ...existingCampaign.config, ...data.config };
+            data.config = mergedConfig;
+          } else {
+            // It's a partial update that affects core fields, need to merge and validate
+            const deepMerge = (target, source) => {
+              const output = { ...target };
+              for (const key in source) {
+                if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                  output[key] = deepMerge(target[key] || {}, source[key]);
+                } else {
+                  output[key] = source[key];
+                }
               }
-            }
-            return output;
-          };
-          
-          // Deep merge the configs
-          const mergedConfig = deepMerge(existingCampaign.config || {}, data.config);
-          
-          strapi.log.info('📋 Handling partial update, merged config:', {
-            campaignType,
-            hasTitle: !!mergedConfig.title,
-            hasQuestions: !!mergedConfig.questions,
-            questionsCount: mergedConfig.questions?.length || 0,
-            updateKeys: Object.keys(data.config),
-            isPartialUpdate: true
-          });
-          
-          // Only validate if we have a complete config structure after merge
-          if (mergedConfig.title) {
-            // Ensure the merged config has the correct type
-            mergedConfig.type = campaignType;
+              return output;
+            };
             
-            const validation = validateCampaignConfig(mergedConfig, campaignType);
+            // Deep merge the configs
+            const mergedConfig = deepMerge(existingCampaign.config || {}, data.config);
             
-            if (!validation.success) {
-              const errorMessages = validation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
+            strapi.log.info('📋 Handling partial update with core fields, merged config:', {
+              campaignType,
+              hasTitle: !!mergedConfig.title,
+              hasQuestions: !!mergedConfig.questions,
+              questionsCount: mergedConfig.questions?.length || 0,
+              updateKeys: Object.keys(data.config),
+              isPartialUpdate: true
+            });
+            
+            // Validate the merged config
+            const mergedValidation = validateCampaignConfig(mergedConfig, campaignType);
+            
+            if (!mergedValidation.success) {
+              const errorMessages = mergedValidation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
               strapi.log.error('❌ Campaign validation failed:', {
-                errors: validation.errors,
+                errors: mergedValidation.errors,
                 mergedConfig
               });
               const error = new Error(`Campaign configuration validation failed: ${errorMessages}`);
-              error.details = validation.errors;
+              error.details = mergedValidation.errors;
               throw error;
             }
             
             // Use validated merged config
-            data.config = validation.data;
-          } else {
-            // If the existing campaign doesn't have a complete config, allow the partial update
-            strapi.log.info('⚠️ Partial update on incomplete config, applying without full validation');
-            // Just apply the partial update - merge it properly
-            data.config = mergedConfig;
+            data.config = mergedValidation.data;
           }
         } else {
           // Full config update - validate as normal

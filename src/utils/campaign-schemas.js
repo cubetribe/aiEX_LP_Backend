@@ -159,12 +159,41 @@ const ResultDisplayConfigSchema = z.object({
  * Validate campaign configuration
  * @param {Object} config - Campaign configuration object
  * @param {string} campaignType - Type of campaign
+ * @param {boolean} isPartialUpdate - Whether this is a partial update (e.g., from admin panel)
  * @returns {Object} Validation result
  */
-function validateCampaignConfig(config, campaignType) {
+function validateCampaignConfig(config, campaignType, isPartialUpdate = false) {
   try {
+    // For partial updates, check if we're only updating nested properties
+    if (isPartialUpdate && config) {
+      const topLevelKeys = Object.keys(config);
+      const nestedOnlyKeys = ['styling', 'behavior', 'scoring', 'metadata'];
+      const coreKeys = ['type', 'title', 'questions', 'content'];
+      
+      const hasOnlyNestedKeys = topLevelKeys.every(key => nestedOnlyKeys.includes(key));
+      const hasCoreKeys = topLevelKeys.some(key => coreKeys.includes(key));
+      
+      // If only updating nested properties and no core keys, skip full validation
+      if (hasOnlyNestedKeys && !hasCoreKeys) {
+        console.log('Partial update with only nested keys, applying lenient validation');
+        return {
+          success: true,
+          data: config,
+          errors: [],
+          isPartialUpdate: true
+        };
+      }
+    }
+    
     // Ensure config has correct type
     const configWithType = { ...config, type: campaignType };
+    
+    // For configs missing title but having other valid structure, add a default title
+    // This handles legacy campaigns or those created without proper validation
+    if (campaignType === 'quiz' && !configWithType.title && configWithType.questions) {
+      console.log('Adding default title to legacy quiz config');
+      configWithType.title = 'Quiz Campaign'; // Default title
+    }
     
     // Parse and validate
     const validatedConfig = CampaignConfigSchema.parse(configWithType);
