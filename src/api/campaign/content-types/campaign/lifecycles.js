@@ -134,10 +134,16 @@ module.exports = {
         return;
       }
       
-      // Ensure aiProvider is always set to 'auto' if provided
-      if (data.aiProvider && data.aiProvider !== 'auto') {
-        data.aiProvider = 'auto';
-        strapi.log.info('✅ AI Provider set to auto mode on update');
+      // Ensure aiProvider is set to 'openai' (only available option)
+      if (data.aiProvider && data.aiProvider !== 'openai') {
+        data.aiProvider = 'openai';
+        strapi.log.info('✅ AI Provider set to openai on update');
+      }
+      
+      // Ensure aiModel is set to 'gpt-4o' (only available option)
+      if (data.aiModel && data.aiModel !== 'gpt-4o') {
+        data.aiModel = 'gpt-4o';
+        strapi.log.info('✅ AI Model set to gpt-4o on update');
       }
       
       // Log update info for debugging
@@ -145,7 +151,9 @@ module.exports = {
         hasConfig: !!data.config,
         hasJsonCode: !!data.jsonCode,
         hasResultDisplayConfig: !!data.resultDisplayConfig,
-        campaignId: event.params.where?.id || event.params.where
+        campaignId: event.params.where?.id || event.params.where,
+        updateKeys: Object.keys(data),
+        isPartialUpdate: !data.type && !data.title && !data.questions
       });
       
       // Skip validation if no config-related changes
@@ -186,31 +194,53 @@ module.exports = {
       // Use existing type if not provided in update
       const campaignType = data.campaignType || existingCampaign.campaignType;
       
+      // Check if this is a partial update from admin panel
+      const isPartialUpdate = !data.config?.type && !data.config?.questions && existingCampaign.config;
+      
+      if (isPartialUpdate && data.config) {
+        strapi.log.info('📝 Detected partial config update from admin panel');
+        // Merge with existing config to preserve structure
+        data.config = {
+          ...existingCampaign.config,
+          ...data.config
+        };
+        strapi.log.info('📝 Merged config:', JSON.stringify(data.config, null, 2));
+      }
+      
       // VALIDATE CONFIG JSON ON UPDATE - be lenient
       if (data.config && typeof data.config === 'object') {
         try {
-          const validation = validateCampaignConfig(data.config, campaignType);
-          
-          if (!validation.success) {
-            // Log the validation errors but don't throw for non-critical issues
-            strapi.log.warn('Campaign config validation warnings on update:', validation.errors);
-            
-            // Only throw for critical errors
-            const criticalErrors = validation.errors.filter(err => 
-              err.path.includes('type') || err.path.includes('required')
-            );
-            
-            if (criticalErrors.length > 0) {
-              const errorMessages = criticalErrors.map(err => `${err.path}: ${err.message}`).join('; ');
-              throw new ApplicationError(`Campaign configuration validation failed: ${errorMessages}`, {
-                details: criticalErrors
-              });
+          // Skip validation for partial updates with incomplete configs
+          if (isPartialUpdate || !data.config.type) {
+            strapi.log.info('📝 Skipping validation for partial update');
+            // Just ensure type is set
+            if (!data.config.type) {
+              data.config.type = campaignType;
             }
+          } else {
+            const validation = validateCampaignConfig(data.config, campaignType);
+            
+            if (!validation.success) {
+              // Log the validation errors but don't throw for non-critical issues
+              strapi.log.warn('Campaign config validation warnings on update:', validation.errors);
+              
+              // Only throw for critical errors
+              const criticalErrors = validation.errors.filter(err => 
+                err.path.includes('type') || err.path.includes('required')
+              );
+              
+              if (criticalErrors.length > 0) {
+                const errorMessages = criticalErrors.map(err => `${err.path}: ${err.message}`).join('; ');
+                throw new ApplicationError(`Campaign configuration validation failed: ${errorMessages}`, {
+                  details: criticalErrors
+                });
+              }
+            }
+            
+            // Use validated config (with defaults applied)
+            data.config = validation.data;
+            strapi.log.info(`✅ Campaign config validated for type: ${campaignType}`);
           }
-          
-          // Use validated config (with defaults applied)
-          data.config = validation.data;
-          strapi.log.info(`✅ Campaign config validated for type: ${campaignType}`);
         } catch (error) {
           // If validation completely fails, just ensure type is set correctly
           strapi.log.warn('Campaign config validation error on update, applying minimal fixes:', error.message);

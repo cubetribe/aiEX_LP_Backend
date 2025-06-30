@@ -103,15 +103,28 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
       
       // PRODUCTION-READY ARCHITECTURE - Immediate with Async Benefits
       console.log('--- 🎯 CHECKPOINT 8: Starting PRODUCTION-READY processing ---');
-      strapi.log.info(`🚀 Starting IMMEDIATE AI processing for lead ${lead.id}`);
+      strapi.log.info(`🚀 Starting processing for lead ${lead.id}`);
       
       try {
-        // IMMEDIATE PROCESSING - Proven to work on Railway
-        console.log('--- 🎯 CHECKPOINT 9: Queueing AI processing ---');
+        // Check if we should process this lead
+        const deliveryMode = campaignData?.resultDeliveryMode || 'show_only';
+        const needsAIProcessing = deliveryMode !== 'email_only'; // Process if showing on screen
         
-        // Queue AI processing instead of doing it immediately
-        if (strapi.queueService && strapi.queueService.isInitialized) {
+        if (!needsAIProcessing) {
+          strapi.log.info(`⏭️ Skipping AI processing for lead ${lead.id} - email only mode`);
+          console.log('--- 🎯 CHECKPOINT 10: AI processing not needed ---');
+          return lead;
+        }
+        
+        console.log('--- 🎯 CHECKPOINT 9: Starting AI processing ---');
+        
+        // Try queue first, then immediate processing
+        let processed = false;
+        
+        // Try queue if available - with better checks
+        if (strapi.queueService && typeof strapi.queueService.isInitialized !== 'undefined' && strapi.queueService.isInitialized) {
           try {
+            console.log('--- 🎯 Queue service available, attempting to queue job ---');
             await strapi.queueService.addAIProcessingJob({
               leadId: lead.id,
               campaignId: campaignData.id
@@ -120,31 +133,34 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
             });
             console.log('--- 🎯 CHECKPOINT 10: AI processing queued successfully ---');
             strapi.log.info(`✅ AI processing queued for lead ${lead.id}`);
+            processed = true;
           } catch (queueError) {
-            strapi.log.error('Queue error, falling back to immediate processing:', queueError);
-            // Fallback to immediate processing if queue fails
-            try {
-              const processedLead = await this.processLeadWithAI(lead.id);
-              strapi.log.info(`✅ AI processing completed immediately for lead ${lead.id}`);
-            } catch (processError) {
-              strapi.log.error(`Failed to process lead ${lead.id} immediately:`, processError);
-              // Don't throw - let the lead exist in pending state
-            }
+            console.log('--- 🎯 Queue error:', queueError.message);
+            strapi.log.warn('Queue not available, will process immediately:', queueError.message);
+            processed = false;
           }
         } else {
-          // No queue available, process immediately
-          strapi.log.warn('Queue service not available, processing immediately');
+          console.log('--- 🎯 Queue service not available ---');
+          console.log('--- Queue service exists:', !!strapi.queueService);
+          console.log('--- Queue service isInitialized:', strapi.queueService?.isInitialized);
+          strapi.log.info('Queue service not available, processing immediately');
+        }
+        
+        // If not queued, process immediately
+        if (!processed) {
+          strapi.log.info('Processing lead immediately (no queue available)');
           try {
             const processedLead = await this.processLeadWithAI(lead.id);
             strapi.log.info(`✅ AI processing completed immediately for lead ${lead.id}`);
           } catch (processError) {
-            strapi.log.error(`Failed to process lead ${lead.id} immediately:`, processError);
-            // Don't throw - let the lead exist in pending state
+            strapi.log.error(`⚠️ AI processing failed for lead ${lead.id}:`, processError.message);
+            strapi.log.error('Process error stack:', processError.stack);
+            // Don't throw - lead is created, just without AI result
           }
         }
         
         // BACKGROUND JOBS - Analytics and export (non-blocking)
-        if (strapi.queueService) {
+        if (strapi.queueService && strapi.queueService.isInitialized) {
           try {
             await strapi.queueService.addAnalyticsJob({
               event: 'lead_processed',
@@ -161,6 +177,8 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
             // Background job failures don't break the main process
             strapi.log.warn(`📊 Background jobs failed for lead ${lead.id}:`, bgError);
           }
+        } else {
+          strapi.log.info('Skipping background jobs - queue service not available');
         }
         
       } catch (error) {
@@ -615,11 +633,13 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
       console.log('--- AI Service has generateContent:', typeof aiProviderService.generateContent === 'function');
       
       console.log('--- 🎯 AI CHECKPOINT C4: Checking AI service availability ---');
-      if (!aiProviderService || !campaignData.aiPromptTemplate) {
+      if (!aiProviderService || typeof aiProviderService.generateContent !== 'function' || !campaignData.aiPromptTemplate) {
         console.log('--- 🎯 AI CHECKPOINT C5: AI service or prompt template not available ---');
         console.log('--- AI Service available:', !!aiProviderService);
+        console.log('--- AI Service has generateContent:', typeof aiProviderService.generateContent === 'function');
         console.log('--- Prompt template available:', !!campaignData.aiPromptTemplate);
         console.log('--- Prompt template:', campaignData.aiPromptTemplate?.substring(0, 100) + '...');
+        strapi.log.warn('AI service not fully available, falling back to template');
         return null;
       }
       console.log('--- 🎯 AI CHECKPOINT C6: AI service and prompt template available ---');
