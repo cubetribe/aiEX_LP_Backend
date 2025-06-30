@@ -110,11 +110,41 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
       try {
         // Check if we should process this lead
         const deliveryMode = campaignData?.resultDeliveryMode || 'show_only';
-        const needsAIProcessing = deliveryMode !== 'email_only'; // Process if showing on screen
+        const needsAIProcessing = true; // Always process AI for any mode that needs content
         
-        if (!needsAIProcessing) {
-          strapi.log.info(`⏭️ Skipping AI processing for lead ${lead.id} - email only mode`);
-          console.log('--- 🎯 CHECKPOINT 10: AI processing not needed ---');
+        // For email_only mode, we still need AI content for the email
+        if (deliveryMode === 'email_only') {
+          strapi.log.info(`📧 Processing lead ${lead.id} for email-only delivery`);
+          console.log('--- 🎯 CHECKPOINT 10: Email-only mode - processing for email content ---');
+          
+          // Process immediately for email_only mode
+          try {
+            const processedLead = await this.processLeadWithAI(lead.id);
+            strapi.log.info(`✅ AI processing completed for email-only lead ${lead.id}`);
+            
+            // Send email immediately after AI processing
+            const fullLead = await strapi.entityService.findOne('api::lead.lead', lead.id, {
+              populate: ['campaign']
+            });
+            
+            if (strapi.emailService && typeof strapi.emailService.sendResultEmail === 'function') {
+              const emailResult = await strapi.emailService.sendResultEmail(fullLead, campaignData, fullLead.aiResult);
+              if (emailResult.success) {
+                strapi.log.info(`📧 Email sent successfully for lead ${lead.id}`);
+                await strapi.entityService.update('api::lead.lead', lead.id, {
+                  data: {
+                    emailSent: true,
+                    emailSentAt: new Date()
+                  }
+                });
+              } else {
+                strapi.log.error(`📧 Email failed for lead ${lead.id}:`, emailResult.error);
+              }
+            }
+          } catch (processError) {
+            strapi.log.error(`⚠️ Processing failed for email-only lead ${lead.id}:`, processError.message);
+          }
+          
           return lead;
         }
         
@@ -154,6 +184,28 @@ module.exports = createCoreService('api::lead.lead', ({ strapi }) => ({
           try {
             const processedLead = await this.processLeadWithAI(lead.id);
             strapi.log.info(`✅ AI processing completed immediately for lead ${lead.id}`);
+            
+            // Check if we need to send email for show_and_email mode
+            if (deliveryMode === 'show_and_email') {
+              const fullLead = await strapi.entityService.findOne('api::lead.lead', lead.id, {
+                populate: ['campaign']
+              });
+              
+              if (strapi.emailService && typeof strapi.emailService.sendResultEmail === 'function') {
+                const emailResult = await strapi.emailService.sendResultEmail(fullLead, campaignData, fullLead.aiResult);
+                if (emailResult.success) {
+                  strapi.log.info(`📧 Email sent successfully for lead ${lead.id}`);
+                  await strapi.entityService.update('api::lead.lead', lead.id, {
+                    data: {
+                      emailSent: true,
+                      emailSentAt: new Date()
+                    }
+                  });
+                } else {
+                  strapi.log.error(`📧 Email failed for lead ${lead.id}:`, emailResult.error);
+                }
+              }
+            }
           } catch (processError) {
             strapi.log.error(`⚠️ AI processing failed for lead ${lead.id}:`, processError.message);
             strapi.log.error('Process error stack:', processError.stack);

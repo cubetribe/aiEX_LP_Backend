@@ -633,12 +633,18 @@ class QueueService {
         await job.progress(75);
       }
 
-      // Queue email job if processing was successful
+      // Queue email job if processing was successful AND email is required
       if (result.success && result.aiResult) {
-        await this.addEmailJob({
-          leadId: leadId,
-          type: 'result-notification',
-        });
+        const deliveryMode = lead.campaign?.resultDeliveryMode || 'show_only';
+        if (deliveryMode === 'email_only' || deliveryMode === 'show_and_email') {
+          this.strapi.log.info(`📧 Queuing email job for lead ${leadId} (delivery mode: ${deliveryMode})`);
+          await this.addEmailJob({
+            leadId: leadId,
+            type: 'result-notification',
+          });
+        } else {
+          this.strapi.log.info(`📧 Skipping email job for lead ${leadId} (delivery mode: ${deliveryMode})`);
+        }
       }
 
       if (job.progress && typeof job.progress === 'function') {
@@ -750,19 +756,35 @@ class QueueService {
         await job.progress(25);
       }
 
-      // Send email using email service
-      const emailService = this.strapi.service('api::email.email');
+      // Send email using lead service
+      const leadService = this.strapi.service('api::lead.lead');
       let result;
 
       switch (type) {
         case 'result-notification':
-          result = await emailService.sendResultEmail(leadId);
+          // Get the lead with campaign data
+          const leadData = await this.strapi.entityService.findOne('api::lead.lead', leadId, {
+            populate: ['campaign']
+          });
+          
+          if (!leadData || !leadData.campaign) {
+            throw new Error(`Lead ${leadId} or its campaign not found`);
+          }
+          
+          // Check if email should be sent based on delivery mode
+          const deliveryMode = leadData.campaign.resultDeliveryMode || 'show_only';
+          if (deliveryMode !== 'email_only' && deliveryMode !== 'show_and_email') {
+            this.strapi.log.info(`📧 Skipping email for lead ${leadId} - delivery mode is ${deliveryMode}`);
+            return { success: true, skipped: true, reason: 'Delivery mode does not require email' };
+          }
+          
+          result = await leadService.sendResultEmail(leadData, leadData.campaign, leadData.aiResult);
           break;
         case 'welcome':
-          result = await emailService.sendWelcomeEmail(leadId);
+          result = { success: false, error: 'Welcome emails not implemented' };
           break;
         case 'follow-up':
-          result = await emailService.sendFollowUpEmail(leadId);
+          result = { success: false, error: 'Follow-up emails not implemented' };
           break;
         default:
           throw new Error(`Unknown email type: ${type}`);
