@@ -190,13 +190,19 @@ module.exports = {
     // Validate AI model matches provider
     if (result.aiModel && result.aiProvider && result.aiProvider !== 'auto') {
       const modelProviderMap = {
+        'gpt-4.1': 'openai',
+        'gpt-4.1-mini': 'openai',
         'gpt-4o': 'openai',
         'gpt-4o-mini': 'openai', 
-        'gpt-4-turbo': 'openai',
         'gpt-3.5-turbo': 'openai',
-        'claude-3-opus': 'anthropic',
-        'claude-3-sonnet': 'anthropic',
-        'claude-3-haiku': 'anthropic',
+        'claude-opus-4': 'anthropic',
+        'claude-sonnet-4': 'anthropic',
+        'claude-3.7-sonnet': 'anthropic',
+        'claude-3.5-sonnet': 'anthropic',
+        'claude-3.5-haiku': 'anthropic',
+        'gemini-2.5-pro': 'gemini',
+        'gemini-2.5-flash': 'gemini',
+        'gemini-2.0-flash': 'gemini',
         'gemini-1.5-pro': 'gemini',
         'gemini-1.5-flash': 'gemini'
       };
