@@ -607,8 +607,10 @@ class QueueService {
       
       this.strapi.log.info(`🤖 Processing AI job for lead: ${leadId}`);
       
-      // Update job progress
-      await job.progress(10);
+      // Update job progress (only if supported by queue type)
+      if (job.progress && typeof job.progress === 'function') {
+        await job.progress(10);
+      }
 
       // Get lead with campaign data
       const lead = await this.strapi.entityService.findOne('api::lead.lead', leadId, {
@@ -619,13 +621,17 @@ class QueueService {
         throw new Error(`Lead ${leadId} not found`);
       }
 
-      await job.progress(25);
+      if (job.progress && typeof job.progress === 'function') {
+        await job.progress(25);
+      }
 
       // Process lead with AI service
       const leadService = this.strapi.service('api::lead.lead');
       const result = await leadService.processLeadWithAI(leadId);
 
-      await job.progress(75);
+      if (job.progress && typeof job.progress === 'function') {
+        await job.progress(75);
+      }
 
       // Queue email job if processing was successful
       if (result.success && result.aiResult) {
@@ -635,7 +641,9 @@ class QueueService {
         });
       }
 
-      await job.progress(100);
+      if (job.progress && typeof job.progress === 'function') {
+        await job.progress(100);
+      }
 
       this.strapi.log.info(`✅ AI processing completed for lead: ${leadId}`);
       
@@ -661,7 +669,9 @@ class QueueService {
       
       this.strapi.log.info(`📊 Processing Sheets export job for lead: ${leadId}`);
       
-      await job.progress(10);
+      if (job.progress && typeof job.progress === 'function') {
+        await job.progress(10);
+      }
 
       // Get lead with campaign data
       const lead = await this.strapi.entityService.findOne('api::lead.lead', leadId, {
@@ -676,7 +686,9 @@ class QueueService {
         throw new Error(`Campaign ${campaignId} does not have Google Sheet configured`);
       }
 
-      await job.progress(30);
+      if (job.progress && typeof job.progress === 'function') {
+        await job.progress(30);
+      }
 
       // Export to Google Sheets
       const GoogleSheetsService = require('./google-sheets.service');
@@ -686,11 +698,15 @@ class QueueService {
         await sheetsService.initialize();
       }
 
-      await job.progress(50);
+      if (job.progress && typeof job.progress === 'function') {
+        await job.progress(50);
+      }
 
       const result = await sheetsService.exportLead(lead);
 
-      await job.progress(100);
+      if (job.progress && typeof job.progress === 'function') {
+        await job.progress(100);
+      }
 
       this.strapi.log.info(`✅ Sheets export completed for lead: ${leadId}`);
       
@@ -717,7 +733,9 @@ class QueueService {
       
       this.strapi.log.info(`📧 Processing email job for lead: ${leadId}, type: ${type}`);
       
-      await job.progress(10);
+      if (job.progress && typeof job.progress === 'function') {
+        await job.progress(10);
+      }
 
       // Get lead data
       const lead = await this.strapi.entityService.findOne('api::lead.lead', leadId, {
@@ -728,7 +746,9 @@ class QueueService {
         throw new Error(`Lead ${leadId} not found`);
       }
 
-      await job.progress(25);
+      if (job.progress && typeof job.progress === 'function') {
+        await job.progress(25);
+      }
 
       // Send email using email service
       const emailService = this.strapi.service('api::email.email');
@@ -748,7 +768,9 @@ class QueueService {
           throw new Error(`Unknown email type: ${type}`);
       }
 
-      await job.progress(100);
+      if (job.progress && typeof job.progress === 'function') {
+        await job.progress(100);
+      }
 
       this.strapi.log.info(`✅ Email sent successfully for lead: ${leadId}`);
       
