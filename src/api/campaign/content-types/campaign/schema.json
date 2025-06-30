@@ -74,7 +74,7 @@
       "type": "text",
       "required": false,
       "maxLength": 50000,
-      "default": "",
+      "default": "// Beispiel-Testkampagne:\n/*\n{\n  \"title\": \"Testkampagne – Funktionsprüfung\",\n  \"description\": \"Dies ist eine Testkampagne zur Überprüfung des Quiz-Flows.\",\n  \"scoring\": {\n    \"logic\": \"none\"\n  },\n  \"styling\": {\n    \"primaryColor\": \"#ff9800\",\n    \"secondaryColor\": \"#607d8b\"\n  },\n  \"behavior\": {\n    \"allowBack\": true,\n    \"showProgress\": true,\n    \"randomizeQuestions\": false\n  },\n  \"questions\": [\n    {\n      \"id\": \"testfrage_1\",\n      \"type\": \"single-choice\",\n      \"order\": 1,\n      \"question\": \"Magst du Pizza?\",\n      \"options\": [\n        \"Ja\",\n        \"Nein\",\n        \"Kommt drauf an\"\n      ],\n      \"required\": true\n    },\n    {\n      \"id\": \"testfrage_2\",\n      \"type\": \"text\",\n      \"order\": 2,\n      \"question\": \"Was möchtest du testen?\",\n      \"required\": false\n    }\n  ]\n}\n*/",
       "description": "Raw JSON configuration for bot-generated campaigns. Will override config field when present."
     },
     "previewUrl": {

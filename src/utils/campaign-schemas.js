@@ -179,11 +179,14 @@ function validateCampaignConfig(config, campaignType, isPartialUpdate = false) {
     // Ensure config has correct type
     const configWithType = { ...config, type: campaignType };
     
-    // For configs missing title but having other valid structure, add a default title
-    // This handles legacy campaigns or those created without proper validation
-    if (campaignType === 'quiz' && !configWithType.title && configWithType.questions) {
-      console.log('Adding default title to legacy quiz config');
-      configWithType.title = 'Quiz Campaign'; // Default title
+    // Remove any title/description from config if present (they belong to campaign entity)
+    if (configWithType.title) {
+      console.log('Removing title from config (belongs to campaign entity)');
+      delete configWithType.title;
+    }
+    if (configWithType.description) {
+      console.log('Removing description from config (belongs to campaign entity)');
+      delete configWithType.description;
     }
     
     // Parse and validate
