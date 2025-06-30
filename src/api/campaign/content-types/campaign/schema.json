@@ -91,7 +91,7 @@
     },
     "aiProvider": {
       "type": "enumeration",
-      "enum": ["chatgpt", "anthropic", "gemini", "auto"],
+      "enum": ["openai", "anthropic", "gemini", "auto"],
       "default": "auto"
     },
     "aiModel": {

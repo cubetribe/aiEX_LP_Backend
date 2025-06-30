@@ -1053,14 +1053,18 @@ Gib die optimierte Konfiguration als VOLLSTÄNDIGES JSON aus.`
         }
 
         const campaigns = await strapi.entityService.findMany('api::campaign.campaign', {
-          fields: ['id', 'title', 'slug', 'isActive', 'status'],
+          fields: ['id', 'title', 'slug', 'isActive', 'status', 'config', 'campaignType'],
           sort: 'id:asc'
         });
 
         ctx.body = {
           success: true,
           data: {
-            campaigns,
+            campaigns: campaigns.map(c => ({
+              ...c,
+              configValid: c.config ? 'Has config' : 'No config',
+              configKeys: c.config ? Object.keys(c.config) : []
+            })),
             count: campaigns.length,
             routes: {
               bySlug: campaigns.map(c => `/campaigns/${c.slug}/submit`),
@@ -1072,6 +1076,46 @@ Gib die optimierte Konfiguration als VOLLSTÄNDIGES JSON aus.`
         strapi.log.error('Error in debug campaigns:', error);
         ctx.status = 500;
         ctx.body = { error: 'Debug failed' };
+      }
+    },
+    config: {
+      auth: false,
+    },
+  },
+  {
+    method: 'POST',
+    path: '/debug/campaign/:id/validate',
+    handler: async (ctx) => {
+      try {
+        const { id } = ctx.params;
+        const { config } = ctx.request.body;
+        
+        const campaign = await strapi.entityService.findOne('api::campaign.campaign', id);
+        
+        if (!campaign) {
+          ctx.status = 404;
+          ctx.body = { error: 'Campaign not found' };
+          return;
+        }
+        
+        // Test validation
+        const { validateCampaignConfig } = require('../utils/campaign-schemas');
+        const validation = validateCampaignConfig(config || campaign.config, campaign.campaignType);
+        
+        ctx.body = {
+          success: validation.success,
+          data: {
+            campaignId: id,
+            campaignType: campaign.campaignType,
+            validation: validation,
+            configProvided: !!config,
+            usedExistingConfig: !config
+          }
+        };
+      } catch (error) {
+        strapi.log.error('Error validating campaign:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'Validation failed', details: error.message };
       }
     },
     config: {

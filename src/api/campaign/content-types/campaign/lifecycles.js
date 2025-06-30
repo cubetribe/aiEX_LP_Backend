@@ -21,6 +21,7 @@ module.exports = {
         const errorMessages = validation.errors.map(err => `${err.path}: ${err.message}`).join('; ');
         const error = new Error(`Campaign configuration validation failed: ${errorMessages}`);
         error.details = validation.errors;
+        error.statusCode = 400;
         throw error;
       }
       
@@ -54,23 +55,43 @@ module.exports = {
 
   // Before updating a campaign
   async beforeUpdate(event) {
-    const { data } = event.params;
-    
-    // Log incoming update data for debugging
-    strapi.log.info('📝 Campaign update event:', {
-      hasData: !!data,
-      dataKeys: data ? Object.keys(data) : [],
-      hasConfig: !!data?.config,
-      configKeys: data?.config ? Object.keys(data.config) : [],
-      hasResultDisplayConfig: !!data?.resultDisplayConfig,
-      whereClause: event.params.where,
-      fullData: JSON.stringify(data, null, 2)
-    });
-    
-    // Skip validation if no data or config changes
-    if (!data || (!data.config && !data.resultDisplayConfig)) {
-      return;
-    }
+    try {
+      const { data } = event.params;
+      
+      // Enhanced logging for debugging admin panel issues
+      strapi.log.info('📝 Campaign update event:', {
+        hasData: !!data,
+        dataKeys: data ? Object.keys(data) : [],
+        hasConfig: !!data?.config,
+        configKeys: data?.config ? Object.keys(data.config) : [],
+        configType: data?.config ? typeof data.config : 'undefined',
+        hasResultDisplayConfig: !!data?.resultDisplayConfig,
+        whereClause: event.params.where,
+        // Log the actual config being sent (truncated if too large)
+        configSample: data?.config ? JSON.stringify(data.config).substring(0, 200) : 'none',
+        fullDataKeys: data ? Object.keys(data) : []
+      });
+      
+      // Skip validation if no data or config changes
+      if (!data || (!data.config && !data.resultDisplayConfig)) {
+        return;
+      }
+      
+      // Special handling for admin panel updates that only send nested properties
+      // If config is a partial update with only nested properties, skip validation
+      if (data.config && typeof data.config === 'object') {
+        const configKeys = Object.keys(data.config);
+        const nestedOnlyKeys = ['styling', 'behavior', 'scoring', 'metadata'];
+        const isNestedOnlyUpdate = configKeys.length > 0 && configKeys.every(key => nestedOnlyKeys.includes(key));
+        
+        if (isNestedOnlyUpdate) {
+          strapi.log.info('📝 Admin Panel nested-only update detected, skipping full validation:', {
+            updateKeys: configKeys,
+            campaignId: event.params.where?.id || event.params.where
+          });
+          return; // Skip validation for nested-only updates
+        }
+      }
     
     // Get campaign ID from where clause
     const campaignId = event.params.where?.id || event.params.where;
@@ -105,14 +126,28 @@ module.exports = {
       // If config is being updated
       if (data.config && typeof data.config === 'object') {
         // Check if this is a partial update (admin panel typically sends partial updates)
-        const isPartialUpdate = !data.config.type && !data.config.title && !data.config.questions;
+        // A partial update is when we're not updating the core structure (type, title, questions)
+        const configKeys = Object.keys(data.config);
+        const coreKeys = ['type', 'title', 'questions'];
+        const hasCoreKeys = coreKeys.some(key => configKeys.includes(key));
+        const isPartialUpdate = !hasCoreKeys && configKeys.length > 0;
         
-        if (isPartialUpdate && existingCampaign.config) {
-          // For partial updates, merge with existing config
-          const mergedConfig = {
-            ...(existingCampaign.config || {}),
-            ...data.config
+        if (isPartialUpdate) {
+          // For partial updates, we need to do a deep merge with existing config
+          const deepMerge = (target, source) => {
+            const output = { ...target };
+            for (const key in source) {
+              if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                output[key] = deepMerge(target[key] || {}, source[key]);
+              } else {
+                output[key] = source[key];
+              }
+            }
+            return output;
           };
+          
+          // Deep merge the configs
+          const mergedConfig = deepMerge(existingCampaign.config || {}, data.config);
           
           strapi.log.info('📋 Handling partial update, merged config:', {
             campaignType,
@@ -123,8 +158,11 @@ module.exports = {
             isPartialUpdate: true
           });
           
-          // Only validate if we have a complete config structure
-          if (mergedConfig.title || mergedConfig.questions) {
+          // Only validate if we have a complete config structure after merge
+          if (mergedConfig.title && mergedConfig.questions && mergedConfig.questions.length > 0) {
+            // Ensure the merged config has the correct type
+            mergedConfig.type = campaignType;
+            
             const validation = validateCampaignConfig(mergedConfig, campaignType);
             
             if (!validation.success) {
@@ -138,11 +176,13 @@ module.exports = {
               throw error;
             }
             
-            // Use merged config to preserve all fields
-            data.config = mergedConfig;
+            // Use validated merged config
+            data.config = validation.data;
           } else {
-            // If no title or questions in merged config, just apply the update without validation
-            strapi.log.info('⚠️ Partial update without core fields, applying without validation');
+            // If the existing campaign doesn't have a complete config, allow the partial update
+            strapi.log.info('⚠️ Partial update on incomplete config, applying without full validation');
+            // Just apply the partial update - merge it properly
+            data.config = mergedConfig;
           }
         } else {
           // Full config update - validate as normal
@@ -189,6 +229,31 @@ module.exports = {
     if (data.slug) {
       data.previewUrl = `${FRONTEND_BASE_URL}/campaign/${data.slug}`;
       strapi.log.info(`Updated preview URL for campaign: ${data.previewUrl}`);
+    }
+    
+    } catch (error) {
+      // Log the error with full details
+      strapi.log.error('❌ Error in campaign beforeUpdate lifecycle:', {
+        error: error.message,
+        stack: error.stack,
+        details: error.details,
+        data: event.params.data
+      });
+      
+      // Re-throw with a more user-friendly message
+      if (error.message.includes('validation failed')) {
+        // For validation errors, provide clearer feedback
+        const userError = new Error(`Campaign configuration error: ${error.message}`);
+        userError.details = error.details || {};
+        userError.statusCode = 400;
+        throw userError;
+      } else {
+        // For other errors, log and re-throw
+        const userError = new Error(`Campaign update failed: ${error.message}`);
+        userError.details = error.details || {};
+        userError.statusCode = 500;
+        throw userError;
+      }
     }
   },
 
